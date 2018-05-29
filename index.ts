@@ -79,7 +79,7 @@ function startExperiment(experiment: Experiment<OptionValue>): void {
   state.queuedStartedExperiments[experiment.name] = experiment;
 
   // 2. start a timer to send started queue
-  state.startExperimentsTimer = setTimeout(async () => {
+  state.startExperimentsTimer = <any>setTimeout(async () => {
     let experiments = mapObject(state.queuedStartedExperiments, e => ({
       options: e.options,
       pick: e.pick
@@ -125,7 +125,7 @@ function completeExperiment(experiment: Experiment<OptionValue>): void {
   state.queuedCompletedExperiments[experiment.name] = experiment;
 
   // 2. start a timer to send completed queue
-  state.completeExperimentsTimer = setTimeout(async () => {
+  state.completeExperimentsTimer = <any>setTimeout(async () => {
     const experiments = getOwnPropertyValues(state.queuedCompletedExperiments);
 
     state.queuedCompletedExperiments = {};
