@@ -23,10 +23,10 @@ jobs:
     steps:
       - run: echo "//registry.npmjs.org/:_authToken=$NPM_TOKEN" >> ~/.npmrc
       - checkout
-      - npm install
-      - npm run build
-      - npm run bump-version
-      - npm publish
+      - run: npm install
+      - run: npm run build
+      - run: npm run bump-version
+      - run: npm publish
 
 workflows:
   version: 2
