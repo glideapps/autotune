@@ -1,0 +1,31 @@
+{
+  "name": "autotune",
+  "version": "0.0.16",
+  "description": "Automatically tune JavaScript apps",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "unpkg": "dist/index.browser.min.js",
+  "scripts": {
+    "browserify": "browserify dist/index.js --standalone autotune -o dist/index.browser.js && uglifyjs dist/index.browser.js --compress --mangle -o dist/index.browser.min.js",
+    "build": "tsc -p tsconfig.json && npm run browserify",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "files": [
+    "dist"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "git+ssh://git@github.com/quicktype/autotune.git"
+  },
+  "author": "typeguard, Inc.",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/quicktype/autotune/issues"
+  },
+  "homepage": "https://github.com/quicktype/autotune#readme",
+  "devDependencies": {
+    "browserify": "^16.2.2",
+    "typescript": "^2.8.3",
+    "uglify-js": "^3.3.27"
+  }
+}
