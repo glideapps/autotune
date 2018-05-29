@@ -1,4 +1,9 @@
 version: 2
+
+dependencies:
+  pre:
+    - echo "//registry.npmjs.org/:_authToken=$NPM_TOKEN" >> ~/.npmrc
+
 jobs:
   build:
     docker:
@@ -23,3 +28,9 @@ jobs:
       - run: npm run build
 
       - run: npm run bump-version
+
+deployment:
+  production:
+    branch: master
+    commands:
+      - npm publish
