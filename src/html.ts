@@ -57,7 +57,7 @@ export function startHTMLExperiments() {
     }
 
     const optionLabel = node.getAttribute("label");
-    return optionLabel || hash(node.textContent).toString();
+    return optionLabel || hash(node.outerHTML).toString();
   }
 
   const customTagNodes = document.getElementsByTagName("experiment");
