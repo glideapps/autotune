@@ -10,6 +10,27 @@ Not sure what your main call-to-action should be, or what color to use for the b
 
 ## Examples
 
+### Main title
+
+Arguing with colleagues about what title to use for the homepage? Let Autotune pick the one that converts the most users:
+
+```html
+<!-- Place a few options between <autotune> tags. -->
+<autotune>
+  <h1>We're here to revolutionize the healthcare industry with blockchain-based nursing.</h1>
+  <h1>We're here to revolutionize location-based news aggregation with proximity drones.</h1>
+  <h1>We're here to revolutionize meme aggregation and delivery with AI-based CDNs.</h1>
+</autotune>
+
+<!-- Indicate a desirable outcome with autotune attributes. -->
+<a href="/signup" autotune>Sign up</a>
+
+<!-- Load the autotune library and suggestions that autotune has learned so far. -->
+<script src="//js.autotune.xyz/11397F73-FF90-4831-B7F7-85023F1741E4.js"></script>
+```
+
+Autotune will test the options you've given between `<autotune>` tags, and automatically favor the option that gets most users to click `Sign up`.
+
 ### "Log in" or "Sign in"?
 
 Not sure if your main CTA should be `Log in` or `Sign in`? Let Autotune pick the one that works best:
