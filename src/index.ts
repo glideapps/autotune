@@ -188,7 +188,7 @@ function http(
   });
 }
 
-export async function initialize(appKey: string): Promise<void> {
+export async function initialize(appKey: string): Promise<{}> {
   log("Initialize", appKey);
 
   state.appKey = appKey;
@@ -212,6 +212,9 @@ export async function initialize(appKey: string): Promise<void> {
   });
 
   startHTMLExperiments();
+
+    // Why does this have to return a value?
+    return {};
 }
 
 export function experiment<T extends OptionValue>(name: string): Experiment<T> {
