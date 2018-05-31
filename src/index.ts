@@ -123,7 +123,10 @@ function startExperiment(experiment: Experiment<OptionValue>): void {
   }, 100);
 }
 
-function completeExperiment(experiment: Experiment<OptionValue>): void {
+function completeExperiment(
+  experiment: Experiment<OptionValue>,
+  then: CompletionCallback | undefined
+): void {
   if (state.completeExperimentsTimer !== undefined) {
     clearTimeout(state.completeExperimentsTimer);
     state.completeExperimentsTimer = undefined;
@@ -153,6 +156,10 @@ function completeExperiment(experiment: Experiment<OptionValue>): void {
       });
     } catch (e) {
       log("Failed to complete experiments", e);
+    } finally {
+      if (then !== undefined) {
+        then();
+      }
     }
   }, 10);
 }
@@ -188,7 +195,7 @@ function http(
   });
 }
 
-export async function initialize(appKey: string): Promise<void> {
+export async function initialize(appKey: string): Promise<{}> {
   log("Initialize", appKey);
 
   state.appKey = appKey;
@@ -212,6 +219,9 @@ export async function initialize(appKey: string): Promise<void> {
   });
 
   startHTMLExperiments();
+
+  // Why does this have to return a value?
+  return {};
 }
 
 export function experiment<T extends OptionValue>(name: string): Experiment<T> {
@@ -243,9 +253,9 @@ export class Experiment<T extends OptionValue> {
     return this.pick;
   }
 
-  async complete(payoff: number = 1) {
+  async complete(payoff: number = 1, then: CompletionCallback | undefined) {
     this.payoff = payoff;
-    completeExperiment(this);
+    completeExperiment(this, then);
   }
 
   // FIXME: This shouldn't be in here.  Maybe a CoinFlipExperiment subclass?
@@ -282,9 +292,33 @@ export function oneOf<T extends OptionValue>(
   return ex.oneOf(...options);
 }
 
-export function complete(score: number = 1): void {
+export type CompletionCallback = () => void;
+
+export function complete(then?: CompletionCallback): void;
+export function complete(
+  score: number,
+  then: () => CompletionCallback | undefined
+): void;
+export function complete(
+  scoreOrThen: number | CompletionCallback | undefined,
+  maybeThen?: CompletionCallback
+): void {
+  let score: number;
+  if (typeof scoreOrThen === "number") {
+    score = scoreOrThen;
+  } else {
+    score = 1;
+  }
+
+  let then: CompletionCallback | undefined;
+  if (typeof scoreOrThen === "function") {
+    then = scoreOrThen;
+  } else {
+    then = maybeThen;
+  }
+
   const completions = state.defaultCompletions;
   Object.getOwnPropertyNames(completions).forEach(name =>
-    completions[name].complete(score)
+    completions[name].complete(score, then)
   );
 }
