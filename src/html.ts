@@ -25,23 +25,35 @@ function hash(s: string): number {
 }
 
 function optionNodeLabelOrText(node: Element): string {
-  return node.getAttribute("label") || hash(node.outerHTML).toString();
+  return node.getAttribute("option") || hash(node.outerHTML).toString();
 }
 
 // Gather tag-based experiments like:
 //
-//   <experiment name="hero">
+//   <autotune>
 //     <h1>Hello!</h1>
-//     <h1>World!</h1>
-//   </experiment>
+//     <h1>¡Hola!</h1>
+//   </autotune>
+//
+// Or more explicitly:
+//
+//   <autotune experiment="main title">
+//     <h1 option="english">Hello!</h1>
+//     <h1 option="spanish">¡Hola!</h1>
+//   </autotune>
 //
 function getTagExperiments(): TagExperiments {
   let experiments: TagExperiments = {};
 
-  const customTagNodes = document.getElementsByTagName("experiment");
+  const customTagNodes = document.getElementsByTagName("autotune");
   for (let i = 0; i < customTagNodes.length; i++) {
     const node = customTagNodes.item(i);
-    const name = node.getAttribute("name");
+
+    const name =
+      node.getAttribute("experiment") ||
+      // We use the hash of the experiment's HTML content if no name is provided
+      hash(node.innerHTML).toString();
+
     let data = { node, options: <OptionValue[]>[] };
 
     for (let i = 0; i < node.children.length; i++) {

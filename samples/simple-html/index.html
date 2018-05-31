@@ -1,17 +1,20 @@
 <h1 data-experiment="hero" data-option="a">Welcome!</h1>
 <h1 data-experiment="hero" data-option="b">¡Bienvenidos!</h1>
 
-<experiment name="hero">
+<autotune>
     <h1 style="color: red">Red</h1>
     <h1 style="color: blue">Blue</h1>
-</experiment>
+</autotune>
 
 <button style="font-size: large">
-    <experiment name="cta">
+    <autotune>
         <span>Log In</span>
         <span>Sign In</span>
-    </experiment>
+    </autotune>
 </button>
 
 <script src="../../dist/index.browser.js"></script>
+<script>
+    autotune.initialize();
+</script>
 
