@@ -11,5 +11,5 @@
     "declaration": true,
     "inlineSources": true
   },
-  "files": ["index.ts"]
+  "files": ["src/index.ts", "src/html.ts"]
 }

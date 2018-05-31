@@ -1,3 +1,5 @@
+import { startHTMLExperiments } from "./html";
+
 const DEBUG = true;
 
 export type OptionValue = string;
@@ -17,6 +19,7 @@ type StartExperimentsRequest = {
 };
 
 type StartExperimentsResponse = {
+  errorMessage?: string;
   experiments: {
     [experimentName: string]: { key: string };
   };
@@ -98,6 +101,11 @@ function startExperiment(experiment: Experiment<OptionValue>): void {
       });
     } catch (e) {
       log("Failed to start experiments", e);
+      return;
+    }
+
+    if (response.errorMessage !== undefined) {
+      log("/startExperiments error", response);
       return;
     }
 
@@ -202,6 +210,8 @@ export async function initialize(appKey: string): Promise<{}> {
     const { bestOption, epsilon } = outcomes[name];
     state.experiments[name] = new Experiment(name, bestOption, epsilon);
   });
+
+  startHTMLExperiments();
 
   // Why does this have to return a value?
   return {};

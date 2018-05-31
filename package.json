@@ -6,9 +6,10 @@
   "types": "dist/index.d.ts",
   "unpkg": "dist/index.browser.min.js",
   "scripts": {
-    "browserify": "browserify dist/index.js --standalone autotune -o dist/index.browser.js && uglifyjs dist/index.browser.js --compress --mangle -o dist/index.browser.min.js",
+    "browserify": "browserify dist/*.js --standalone autotune -o dist/index.browser.js && uglifyjs dist/index.browser.js --compress --mangle -o dist/index.browser.min.js",
     "build": "tsc -p tsconfig.json && npm run browserify",
     "bump-version": "ts-node scripts/patch-npm-version.ts",
+    "start": "watch 'npm run build' src",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "files": [
@@ -28,9 +29,11 @@
     "@types/shelljs": "^0.8.0",
     "browserify": "^16.2.2",
     "compare-versions": "^3.2.1",
+    "serve": "^7.1.5",
     "shelljs": "^0.8.2",
     "ts-node": "^6.0.5",
     "typescript": "^2.8.3",
-    "uglify-js": "^3.3.27"
+    "uglify-js": "^3.3.27",
+    "watch": "^1.0.2"
   }
 }
