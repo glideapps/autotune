@@ -25,7 +25,7 @@ Arguing with colleagues about what title to use for the homepage? Let Autotune p
 <!-- Indicate a desirable outcome with autotune attributes. -->
 <a href="/signup" autotune>Sign up</a>
 
-<!-- Load the autotune library and suggestions that autotune has learned so far. -->
+<!-- Load autotune along with what autotune has learned so far. -->
 <script src="//js.autotune.xyz/11397F73-FF90-4831-B7F7-85023F1741E4.js"></script>
 ```
 
