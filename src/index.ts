@@ -1,5 +1,14 @@
 import { startHTMLExperiments } from "./html";
 
+// https://stackoverflow.com/a/2117523/80410
+function uuidv4() {
+  return "xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx".replace(/[xy]/g, function(c) {
+    var r = (Math.random() * 16) | 0,
+      v = c == "x" ? r : (r & 0x3) | 0x8;
+    return v.toString(16);
+  });
+}
+
 const DEBUG = true;
 
 export type OptionValue = string;
@@ -84,6 +93,7 @@ function startExperiment(experiment: Experiment<OptionValue>): void {
   // 2. start a timer to send started queue
   state.startExperimentsTimer = <any>setTimeout(async () => {
     let experiments = mapObject(state.queuedStartedExperiments, e => ({
+      instanceKey: e.key,
       options: e.options,
       pick: e.pick
     }));
@@ -93,32 +103,14 @@ function startExperiment(experiment: Experiment<OptionValue>): void {
     state.queuedStartedExperiments = {};
     state.startExperimentsTimer = undefined;
 
-    let response: StartExperimentsResponse;
     try {
-      response = await http("POST", api("/startExperiments"), {
+      http("POST", api("/startExperiments"), {
         appKey: state.appKey,
         experiments
       });
     } catch (e) {
       log("Failed to start experiments", e);
       return;
-    }
-
-    if (response.errorMessage !== undefined) {
-      log("/startExperiments error", response);
-      return;
-    }
-
-    log("/startExperiments response", response);
-
-    if (response !== undefined) {
-      // Assign keys of started experiments
-      Object.getOwnPropertyNames(response.experiments).forEach(name => {
-        let startedExperiment = state.experiments[name];
-        if (startedExperiment !== undefined) {
-          startedExperiment.key = response.experiments[name].key;
-        }
-      });
     }
   }, 100);
 }
@@ -237,13 +229,15 @@ export class Experiment<T extends OptionValue> {
   pick?: T;
   options: T[];
 
-  key?: string;
+  readonly key: string;
 
   constructor(
     public readonly name: string,
     readonly bestOption: T | undefined = undefined,
     readonly epsilon: number = 1
-  ) {}
+  ) {
+    this.key = uuidv4();
+  }
 
   private setValueAndStartExperiment(value: T): T {
     if (this.pick === undefined) {
