@@ -15,6 +15,12 @@ export function log(...args: any[]) {
   }
 }
 
+export function error(...args: any[]) {
+  if (DEBUG) {
+    console.error("AUTOTUNE", ...args);
+  }
+}
+
 export function getOwnPropertyValues<T>(x: { [name: string]: T }): T[] {
   return Object.getOwnPropertyNames(x).map(n => x[n]);
 }

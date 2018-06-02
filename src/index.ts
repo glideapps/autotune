@@ -1,5 +1,12 @@
 import { startHTMLExperiments } from "./html";
-import { http, uuidv4, log, mapObject, getOwnPropertyValues } from "./util";
+import {
+  http,
+  uuidv4,
+  log,
+  error,
+  mapObject,
+  getOwnPropertyValues
+} from "./util";
 
 export type OptionValue = string;
 
@@ -80,7 +87,7 @@ function startExperiment(experiment: Experiment<OptionValue>): void {
         experiments
       });
     } catch (e) {
-      log("Failed to start experiments", e);
+      error("Failed to start experiments", e);
       return;
     }
   }, 100);
@@ -118,7 +125,7 @@ function completeExperiment(
         experiments: experimentsByKey
       });
     } catch (e) {
-      log("Failed to complete experiments", e);
+      error("Failed to complete experiments", e);
     } finally {
       if (then !== undefined) {
         then();
@@ -136,7 +143,7 @@ export async function initialize(appKey: string): Promise<{}> {
   try {
     outcomes = await http("GET", outcomesUrl(appKey));
   } catch (e) {
-    log("ERROR getting outcomes", e);
+    error("Could not get outcomes", e);
   }
 
   log("Got outcomes", outcomes);
