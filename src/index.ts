@@ -83,6 +83,7 @@ function startExperiment(experiment: Experiment<OptionValue>): void {
 
     try {
       http("POST", api("/startExperiments"), {
+        version: 1,
         appKey: state.appKey,
         experiments
       });
@@ -121,6 +122,7 @@ function completeExperiment(
 
     try {
       await http("POST", api("/completeExperiments"), {
+        version: 1,
         appKey: state.appKey,
         experiments: experimentsByKey
       });
