@@ -1,5 +1,7 @@
 import { startHTMLExperiments } from "./html";
-import { http, uuidv4, log, error, mapObject, getOwnPropertyValues } from "./util";
+import { http, uuidv4, log, error, mapObject, getOwnPropertyValues, getLocalLanguage, getTimeZoneOffset } from "./util";
+
+export type OptionValue = string;
 
 type AutotuneConfig = {
     appKey: string;
@@ -79,9 +81,13 @@ function startExperiment(theExperiment: Experiment): void {
 
         try {
             http("POST", api("/startExperiments"), {
-                version: 1,
+                version: 2,
                 appKey: state.appKey,
-                experiments
+                experiments,
+                ctx: {
+                    lang: getLocalLanguage(),
+                    tzo: getTimeZoneOffset()
+                }
             });
         } catch (e) {
             error("Failed to start experiments", e);
