@@ -89,3 +89,10 @@ ReactDOM.render(
 
 Autotune will experiment with different titles on this page, and automatically tune
 the app to use the title that causes the most users to click 'Sign in' over time.
+
+## Development
+
+```shell
+$ npm install
+$ npm start
+```
