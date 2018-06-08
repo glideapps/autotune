@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>Create new account</title>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width">
+
+    <script>
+        window.autotuneConfig = {
+            appKey: "0831cd5d-5c9c-489d-8fe6-f674bd09ec0e",
+            outcomes: {}
+        };
+    </script>
+    <script src="../../dist/index.browser.js"></script>
+
+    <link href="https://unpkg.com/normalize.css@^7.0.0" rel="stylesheet" />
+    <link href="https://unpkg.com/@blueprintjs/core@^2.0.0/lib/css/blueprint.css" rel="stylesheet" />
+    <link href="https://unpkg.com/@blueprintjs/icons@^2.0.0/lib/css/blueprint-icons.css" rel="stylesheet" />
+
+    <style>
+        body.pt-dark {
+            background-color: #202B33;
+        }
+
+        .pt-dialog {
+            max-width: 400px;
+            margin-top: 10%;
+        }
+
+        .pt-input {
+            margin: 5px 0;
+        }
+    </style>
+</head>
+
+<body autotune-class="pt-light pt-dark">
+    <div class="pt-dialog-container">
+        <div class="pt-dialog">
+            <div class="pt-dialog-header">
+                <span class="pt-icon-large pt-icon-person"></span>
+                <h4 class="pt-dialog-header-title">Login Dialog</h4>
+            </div>
+            <div class="pt-dialog-body">
+                <input class="pt-input pt-fill pt-large" type="text" placeholder="Username" dir="auto" />
+                <input class="pt-input pt-fill pt-large" type="text" placeholder="Email" dir="auto" />
+                <input class="pt-input pt-fill pt-large" type="text" placeholder="Password" dir="auto" />
+            </div>
+            <div class="pt-dialog-footer">
+                <div class="pt-dialog-footer-actions">
+                    <button type="submit" class="pt-button pt-large pt-fill" autotune-class="default pt-intent-primary pt-intent-success" autotune>Sign In</button>
+                </div>
+            </div>
+        </div>
+    </div>
+</body>
+
+</html>
