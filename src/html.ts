@@ -1,5 +1,5 @@
 import { OptionValue, oneOf } from ".";
-import { map, each } from "./util";
+import { map, each, hash } from "./util";
 
 type AttributeExperiments = {
   [name: string]: {
@@ -14,16 +14,6 @@ type TagExperiments = {
     node: Element;
   }>;
 };
-
-function hash(s: string): number {
-  var hash = 0;
-  for (var i = 0; i < s.length; i++) {
-    var character = s.charCodeAt(i);
-    hash = (hash << 5) - hash + character;
-    hash = hash & hash; // Convert to 32bit integer
-  }
-  return hash;
-}
 
 function optionNodeLabelOrText(node: Element): string {
   return node.getAttribute("option") || hash(node.outerHTML).toString();
