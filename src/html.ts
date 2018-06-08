@@ -1,4 +1,4 @@
-import { OptionValue, oneOf } from ".";
+import { OptionValue, oneOf, complete } from ".";
 import { map, each, hash } from "./util";
 
 type AttributeExperiments = {
@@ -77,7 +77,27 @@ function getAttributeExperiments(): AttributeExperiments {
 export function startHTMLExperiments() {
   // DOMContentLoaded is well-supported in modern browsers, but we may need a more backwards-compat solution
   // What if DOM content is already loaded?
-  document.addEventListener("DOMContentLoaded", gatherAndStartDOMExperiments);
+  document.addEventListener("DOMContentLoaded", () => {
+    gatherAndStartDOMExperiments();
+    setupHTMLCompletions();
+  });
+}
+
+function setupHTMLCompletions() {
+  const links = document.querySelectorAll("a[autotune],a[data-autotune]");
+  each(links, (link: HTMLAnchorElement) => {
+    const onclick = link.onclick;
+    link.onclick = event => {
+      event.preventDefault();
+      complete(() => {
+        if (onclick !== null) {
+          onclick.bind(link)(event);
+        } else {
+          window.location.href = link.href;
+        }
+      });
+    };
+  });
 }
 
 function gatherAndStartDOMExperiments() {
