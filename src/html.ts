@@ -94,6 +94,12 @@ function getAttributeExperiments(): AttributeExperiments {
 }
 
 export function startHTMLExperiments() {
+  // DOMContentLoaded is well-supported in modern browsers, but we may need a more backwards-compat solution
+  // What if DOM content is already loaded?
+  document.addEventListener("DOMContentLoaded", gatherAndStartDOMExperiments);
+}
+
+function gatherAndStartDOMExperiments() {
   const attributeExperiments = getAttributeExperiments();
   const tagExperiments = getTagExperiments();
 

@@ -10,6 +10,11 @@ import {
 
 export type OptionValue = string;
 
+type AutotuneConfig = {
+  appKey: string;
+  outcomes: OutcomesResponse;
+};
+
 type CompleteExperimentsRequest = {
   appKey: string;
   experiments: {
@@ -31,7 +36,7 @@ type StartExperimentsResponse = {
   };
 };
 
-type OutcomesResponse = {
+export type OutcomesResponse = {
   [experimentName: string]: { bestOption: OptionValue; epsilon: number };
 };
 
@@ -136,19 +141,23 @@ function completeExperiment(
   }, 10);
 }
 
-export async function initialize(appKey: string): Promise<{}> {
+export async function initialize(
+  appKey: string,
+  outcomes: OutcomesResponse = undefined
+): Promise<void> {
   log("Initialize", appKey);
 
   state.appKey = appKey;
 
-  let outcomes: OutcomesResponse = {};
-  try {
-    outcomes = await http("GET", outcomesUrl(appKey));
-  } catch (e) {
-    error("Could not get outcomes", e);
+  if (outcomes === undefined) {
+    outcomes = {};
+    try {
+      outcomes = await http("GET", outcomesUrl(appKey));
+      log("Got outcomes", outcomes);
+    } catch (e) {
+      error("Could not get outcomes", e);
+    }
   }
-
-  log("Got outcomes", outcomes);
 
   Object.getOwnPropertyNames(outcomes).forEach(name => {
     // If there's already an experiment there, it's already running,
@@ -160,9 +169,6 @@ export async function initialize(appKey: string): Promise<{}> {
   });
 
   startHTMLExperiments();
-
-  // Why does this have to return a value?
-  return {};
 }
 
 export function experiment<T extends OptionValue>(name: string): Experiment<T> {
@@ -270,5 +276,6 @@ if (
   typeof window !== "undefined" &&
   typeof (window as any).autotuneConfig !== "undefined"
 ) {
-  log("pre-initialized");
+  const config: AutotuneConfig = (window as any).autotuneConfig;
+  initialize(config.appKey, config.outcomes);
 }
