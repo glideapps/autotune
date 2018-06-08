@@ -122,11 +122,12 @@ function gatherAndStartDOMExperiments() {
     });
     const choice = oneOf(name, Object.getOwnPropertyNames(options));
     tagExperiments[name].forEach(experiment => {
-      map(experiment.node.children, x => x).forEach(child => {
-        if (optionNodeLabelOrText(child) !== choice) {
-          child.remove();
-        }
-      });
+      map(experiment.node.children, x => x) // ensure we're not mutating collection as we iterate
+        .forEach(child => {
+          if (optionNodeLabelOrText(child) !== choice) {
+            child.remove();
+          }
+        });
     });
   });
 }
