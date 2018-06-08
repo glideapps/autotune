@@ -265,3 +265,10 @@ export function complete(
     completions[name].complete(score, then)
   );
 }
+
+if (
+  typeof window !== "undefined" &&
+  typeof (window as any).autotuneConfig !== "undefined"
+) {
+  log("pre-initialized");
+}
