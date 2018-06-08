@@ -15,6 +15,13 @@ type TagExperiments = {
   }>;
 };
 
+type ClassExperiments = {
+  [name: string]: {
+    options: OptionValue[];
+    node: Element;
+  };
+};
+
 function optionNodeLabelOrText(node: Element): string {
   return node.getAttribute("option") || hash(node.outerHTML).toString();
 }
@@ -74,6 +81,30 @@ function getAttributeExperiments(): AttributeExperiments {
   return experiments;
 }
 
+// Gather attribute-based class experiments like:
+//
+//   <button autotune-class="green blue purple">Sign up</button>
+//
+function getClassAttributeExperiments(): ClassExperiments {
+  let experiments: ClassExperiments = {};
+  const attributedNodes = document.querySelectorAll(
+    "[autotune-class],[data-autotune-class]"
+  );
+  each(attributedNodes, node => {
+    const classesRaw =
+      node.getAttribute("autotune-class") ||
+      node.getAttribute("data-autotune-class") ||
+      "";
+    const classes = classesRaw.split(" ");
+    const experimentName =
+      node.getAttribute("autotune-experiment") ||
+      node.getAttribute("data-autotune-experiment") ||
+      `${hash(node.innerHTML)}-class`;
+    experiments[experimentName] = { options: classes, node };
+  });
+  return experiments;
+}
+
 export function startHTMLExperiments() {
   // DOMContentLoaded is well-supported in modern browsers, but we may need a more backwards-compat solution
   // What if DOM content is already loaded?
@@ -129,5 +160,12 @@ function gatherAndStartDOMExperiments() {
           }
         });
     });
+  });
+
+  const classExperiments = getClassAttributeExperiments();
+  Object.getOwnPropertyNames(classExperiments).forEach(name => {
+    const experiment = classExperiments[name];
+    const pick = oneOf(name, experiment.options);
+    experiment.node.classList.add(pick);
   });
 }

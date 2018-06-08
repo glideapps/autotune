@@ -9,11 +9,11 @@
 <style>
     .login-page {
         width: 360px;
-        padding: 8% 0 0;
+        padding: 4% 0 0;
         margin: auto;
     }
 
-    .form {
+    form {
         position: relative;
         z-index: 1;
         background: #FFFFFF;
@@ -25,7 +25,7 @@
         border-radius: 3px;
     }
 
-    .form input {
+    form input {
         font-family: sans-serif;
         outline: 0;
         background: #f2f2f2;
@@ -37,28 +37,20 @@
         font-size: 14px;
     }
 
-    .form button {
+    form button {
         font-family: sans-serif;
         text-transform: uppercase;
         outline: 0;
-        background: #4CAF50;
         width: 100%;
         border: 0;
         padding: 15px;
         color: #FFFFFF;
         font-size: 14px;
-        -webkit-transition: all 0.3 ease;
         transition: all 0.3 ease;
         cursor: pointer;
     }
 
-    .form button:hover,
-    .form button:active,
-    .form button:focus {
-        background: #43A047;
-    }
-
-    .form .message {
+    form .message {
         margin: 15px 0 0;
         color: #777;
         font-size: small;
@@ -68,34 +60,28 @@
         background: #2c2b32;
         font-family: sans-serif;
     }
+
+    .green {
+        background-color: #1abc9c
+    }
+
+    .blue {
+        background-color: #1abc9c
+    }
+
+    .purple {
+        background-color: #8e44ad
+    }
 </style>
 
 <div class="login-page">
-    <div class="form">
-        <form class="register-form" autotune>
-            <input type="text" placeholder="name" />
-            <input type="password" placeholder="password" />
-            <input type="text" placeholder="email address" />
-            <autotune>
-                <style>
-                    button {
-                        background-color: green;
-                    }
-                </style>
-                <style>
-                    button {
-                        background-color: blue;
-                    }
-                </style>
-            </autotune>
-            <autotune>
-                <button>Sign up</button>
-                <button>Create account</button>
-                <button>Get started</button>
-            </autotune>
-            <p class="message">Already registered?
-                <a href="#">Sign In</a>
-            </p>
-        </form>
-    </div>
+    <form autotune>
+        <input type="text" placeholder="name" />
+        <input type="password" placeholder="password" />
+        <input type="text" placeholder="email address" />
+        <button autotune-class="green blue purple">Sign up</button>
+        <p class="message">Already registered?
+            <a href="#">Sign In</a>
+        </p>
+    </form>
 </div>
