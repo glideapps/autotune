@@ -64,3 +64,24 @@ export function http(
     }
   });
 }
+
+export function map<T, U>(
+  collection: { length: number; item(index: number): T },
+  f: (element: T, index: number) => U
+): U[] {
+  let results = [];
+  for (let i = 0; i < collection.length; i++) {
+    results.push(f(collection.item(i), i));
+  }
+  return results;
+}
+
+export function each<T>(
+  collection: { length: number; item(index: number): T },
+  f: (element: T, index: number) => void
+): void {
+  map(collection, (e, i) => {
+    f(e, i);
+    return undefined;
+  });
+}

@@ -1,4 +1,5 @@
 import { OptionValue, oneOf } from ".";
+import { map, each } from "./util";
 
 type AttributeExperiments = {
   [name: string]: {
@@ -46,25 +47,16 @@ function getTagExperiments(): TagExperiments {
   let experiments: TagExperiments = {};
 
   const customTagNodes = document.getElementsByTagName("autotune");
-  for (let i = 0; i < customTagNodes.length; i++) {
-    const node = customTagNodes.item(i);
-
+  each(customTagNodes, node => {
     const name =
       node.getAttribute("experiment") ||
       // We use the hash of the experiment's HTML content if no name is provided
       hash(node.innerHTML).toString();
-
-    let data = { node, options: <OptionValue[]>[] };
-
-    for (let i = 0; i < node.children.length; i++) {
-      const child = node.children.item(i);
-      data.options.push(optionNodeLabelOrText(child));
-    }
-
+    const data = { node, options: map(node.children, optionNodeLabelOrText) };
     const list = experiments[name] || [];
     list.push(data);
     experiments[name] = list;
-  }
+  });
   return experiments;
 }
 
@@ -76,8 +68,7 @@ function getTagExperiments(): TagExperiments {
 function getAttributeExperiments(): AttributeExperiments {
   let experiments: AttributeExperiments = {};
   const attributedNodes = document.querySelectorAll("[data-experiment]");
-  for (let i = 0; i < attributedNodes.length; i++) {
-    const node = attributedNodes.item(i);
+  each(attributedNodes, node => {
     const name = node.getAttribute("data-experiment");
     const option = node.getAttribute("data-option");
 
@@ -89,7 +80,7 @@ function getAttributeExperiments(): AttributeExperiments {
       data.options.push(option);
     }
     data.nodes.push(node);
-  }
+  });
   return experiments;
 }
 
@@ -121,14 +112,11 @@ function gatherAndStartDOMExperiments() {
     });
     const choice = oneOf(name, Object.getOwnPropertyNames(options));
     tagExperiments[name].forEach(experiment => {
-      const children = experiment.node.children;
-      for (let i = 0; i < children.length; i++) {
-        const child = children.item(i);
+      map(experiment.node.children, x => x).forEach(child => {
         if (optionNodeLabelOrText(child) !== choice) {
           child.remove();
-          i--; // Don't advance iterator when a child is removed
         }
-      }
+      });
     });
   });
 }
