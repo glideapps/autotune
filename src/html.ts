@@ -126,6 +126,7 @@ function gatherAndStartDOMExperiments() {
         const child = children.item(i);
         if (optionNodeLabelOrText(child) !== choice) {
           child.remove();
+          i--; // Don't advance iterator when a child is removed
         }
       }
     });
