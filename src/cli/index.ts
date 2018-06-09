@@ -283,7 +283,7 @@ async function graphQL(_args: yargs.Arguments): Promise<void> {
     console.log(JSON.stringify(await queryGraphQL<User>(graphQLQueryAll, "viewer"), undefined, 4));
 }
 
-function main(): void {
+async function main(): Promise<void> {
     let didSomething = false;
 
     function cmd(p: Promise<void>): void {
@@ -330,6 +330,12 @@ function main(): void {
         .command("graphql", false, {}, args => cmd(graphQL(args))).argv;
 
     if (!didSomething || argv.help) {
+        if ((await tryGetUserInfo()) === undefined) {
+            console.error("It seems you're not signed up to autotune yet.  Please use");
+            console.error('the "signup" command to sign up as a new user.  If you\'ve');
+            console.error('signed up already, use "login" to log in.');
+            console.error("");
+        }
         yargs.showHelp();
     }
 }
