@@ -30,13 +30,13 @@ Next, create an experiment anywhere on your page:
 <autotune>
     <h1>The glass is half full</h1>
     <h1>The glass is half empty</h1>
-<autotune>
+</autotune>
 
 <!-- More explicitly:-->
 <autotune experiment="Main title">
     <h1 option="half full">The glass is half full</h1>
     <h1 option="half empty">The glass is half empty</h1>
-<autotune>
+</autotune>
 
 <!-- Without custom tags (most compatible):-->
 <h1 data-experiment="Main title" data-option="half full">The glass is half full</h1>
