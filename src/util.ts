@@ -1,3 +1,5 @@
+export { debounce } from "./debounce";
+
 const DEBUG = true;
 
 // https://stackoverflow.com/a/2117523/80410
