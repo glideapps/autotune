@@ -80,8 +80,10 @@ function startExperiment(theExperiment: Experiment): void {
         state.queuedStartedExperiments = {};
         state.startExperimentsTimer = undefined;
 
-        try {
-            http("POST", api("/startExperiments"), {
+        http(
+            "POST",
+            api("/startExperiments"),
+            {
                 version: 2,
                 appKey: state.appKey,
                 experiments,
@@ -89,11 +91,12 @@ function startExperiment(theExperiment: Experiment): void {
                     lang: getLocalLanguage(),
                     tzo: getTimeZoneOffset()
                 }
-            });
-        } catch (e) {
-            error("Failed to start experiments", e);
-            return;
-        }
+            },
+            () => {
+                return;
+            },
+            e => error("Failed to start experiments", e)
+        );
     }, 100);
 }
 
@@ -118,42 +121,30 @@ function completeExperiment(theExperiment: Experiment, then: CompletionCallback 
 
         log("Completing experiments", experimentsByKey);
 
-        try {
-            await http("POST", api("/completeExperiments"), {
-                version: 1,
-                appKey: state.appKey,
-                experiments: experimentsByKey
-            });
-        } catch (e) {
-            error("Failed to complete experiments", e);
-        } finally {
+        function callThen() {
             if (then !== undefined) {
                 then();
             }
         }
+
+        http(
+            "POST",
+            api("/completeExperiments"),
+            {
+                version: 1,
+                appKey: state.appKey,
+                experiments: experimentsByKey
+            },
+            () => callThen(),
+            e => {
+                error("Failed to complete experiments", e);
+                callThen();
+            }
+        );
     }, 10);
 }
 
-export async function initialize(appKey: string, outcomes: OutcomesResponse = undefined): Promise<void> {
-    if (state.appKey !== "") {
-        log("Initialized more than once");
-        return;
-    }
-
-    log("Initialize", appKey);
-
-    state.appKey = appKey;
-
-    if (outcomes === undefined) {
-        outcomes = {};
-        try {
-            outcomes = await http("GET", outcomesUrl(appKey));
-            log("Got outcomes", outcomes);
-        } catch (e) {
-            error("Could not get outcomes", e);
-        }
-    }
-
+function finishInit(outcomes: OutcomesResponse): void {
     Object.getOwnPropertyNames(outcomes).forEach(name => {
         // If there's already an experiment there, it's already running,
         // so don't overwrite it.
@@ -164,6 +155,36 @@ export async function initialize(appKey: string, outcomes: OutcomesResponse = un
     });
 
     startHTMLExperiments();
+}
+
+export function initialize(appKey: string, then: () => void, outcomes: OutcomesResponse = undefined): void {
+    if (state.appKey !== "") {
+        log("Initialized more than once");
+        return;
+    }
+
+    log("Initialize", appKey);
+
+    state.appKey = appKey;
+
+    if (outcomes !== undefined) {
+        finishInit(outcomes);
+        return;
+    }
+
+    http(
+        "GET",
+        outcomesUrl(appKey),
+        undefined,
+        o => {
+            log("Got outcomes", o);
+            finishInit(o);
+        },
+        e => {
+            error("Could not get outcomes", e);
+            finishInit({});
+        }
+    );
 }
 
 function experiment(name: string): Experiment {
@@ -270,5 +291,11 @@ export function complete(scoreOrThen: number | CompletionCallback | undefined, m
 
 if (typeof window !== "undefined" && typeof (window as any).autotuneConfig !== "undefined") {
     const config: AutotuneConfig = (window as any).autotuneConfig;
-    initialize(config.appKey, config.outcomes);
+    initialize(
+        config.appKey,
+        () => {
+            return;
+        },
+        config.outcomes
+    );
 }
