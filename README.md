@@ -49,17 +49,15 @@ Not sure if your main CTA should be `Log in` or `Sign in`? Let Autotune pick the
 ```javascript
 import * as autotune from "autotune";
 
-autotune.init("11397F73-FF90-4831-B7F7-85023F1741E4");
-
-ReactDOM.render(
-  <div>
-    <h1>Welcome to my app!</h1>
-    <button onClick={autotune.complete}>
-      {autotune.flipCoin("cta") ? "Log in" : "Sign in"}
-    </button>
-  </div>,
-  document.getElementById("root")
-);
+autotune.initialize("11397F73-FF90-4831-B7F7-85023F1741E4").then(() => {
+    ReactDOM.render(
+        <div>
+            <h1>Welcome to my app!</h1>
+            <button onClick={autotune.complete}>{autotune.flipCoin("cta") ? "Log in" : "Sign in"}</button>
+        </div>,
+        document.getElementById("root")
+    );
+});
 ```
 
 Autotune will flip a coin to decide whether to use `Log in` or `Sign in`, and over time
@@ -73,29 +71,23 @@ Here we add an autotuned welcome message to a simple React app:
 import * as autotune from "autotune";
 
 // 1. Initialize
-autotune.init("11397F73-FF90-4831-B7F7-85023F1741E4");
+autotune.initialize("11397F73-FF90-4831-B7F7-85023F1741E4").then(() => {
+    // 2. Create a variable
+    const title = autotune.oneOf("Welcome message", [
+        "👋 Please sign in.",
+        "Welcome! Please sign in.",
+        "Bienvenidos! Please sign in."
+    ]);
 
-// 2. Create a variable
-const title = autotune.oneOf(
-  "👋 Please sign in.",
-  "Welcome! Please sign in.",
-  "Bienvenidos! Please sign in."
-);
-
-ReactDOM.render(
-  <div>
-    // 3. Use the variable
-    <h1>{title.value}</h1>
-    <button
-      onClick={() =>
-        /* 4. Indicate when a goal is completed */ autotune.complete()
-      }
-    >
-      Sign in
-    </button>
-  </div>,
-  document.getElementById("root")
-);
+    ReactDOM.render(
+        <div>
+            // 3. Use the variable
+            <h1>{title.value}</h1>
+            <button onClick={() => /* 4. Indicate when a goal is completed */ autotune.complete()}>Sign in</button>
+        </div>,
+        document.getElementById("root")
+    );
+});
 ```
 
 Autotune will experiment with different titles on this page, and automatically tune
