@@ -6,10 +6,8 @@
 
 ```shell
 $ npm install -g autotune
-$ autotune create-account <email> <password>
-# Autotune will email you a confirmation code
-$ autotune confirm <code>
-# Autotune will create your first app and give you a code sample
+$ autotune create-account <email> <password> # Autotune will email you a confirmation code
+$ autotune confirm <code>                    # Autotune will give you a code sample
 ```
 
 ## Examples
