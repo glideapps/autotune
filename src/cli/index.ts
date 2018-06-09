@@ -50,7 +50,7 @@ async function getUserInfo(): Promise<UserInfo> {
     const userInfo = await tryGetUserInfo();
     if (userInfo === undefined) {
         console.error('You\'re not logged in :-(.  Please use "login" to log in');
-        console.error('or "signup" to sign up, if you haven\'t done so already.');
+        console.error('or "create-account" to sign up, if you haven\'t done so already.');
         return process.exit(1);
     }
     return userInfo;
@@ -109,7 +109,7 @@ async function cmdConfirm(_args: yargs.Arguments, email: string | undefined, cod
     if (password !== undefined) {
         await authenticateWithPassword(email, password);
 
-        const appKey = await createApp("MyFirstApp");
+        const appKey = await createApp("My first autotune app");
         console.log("");
         console.log("Here's your first app key:");
         console.log(`    ${appKey}`);
@@ -166,7 +166,7 @@ async function authenticateWithPassword(email: string, password: string): Promis
 
 async function cmdLogin(_args: yargs.Arguments, email: string, password: string): Promise<void> {
     await authenticateWithPassword(email, password);
-    console.log("Logged in");
+    console.log("You're now logged in.");
 }
 
 async function makeAuthHeaders(): Promise<{ [name: string]: string }> {
@@ -297,14 +297,14 @@ async function main(): Promise<void> {
     const argv = yargs
         .usage("Usage: $0 <command> [options]")
         .command(
-            "signup <email> <password>",
-            "Sign up as a new user",
+            "create-account <email> <password>",
+            "Create a new account",
             ya => ya.positional("email", { type: "string" }).positional("password", { type: "string" }),
             args => cmd(cmdSignup(args, args.email, args.password))
         )
         .command(
-            "confirm <code> [email]",
-            "Confirm user creation",
+            "confirm <code>",
+            "Confirm a new account",
             ya => ya.positional("email", { type: "string" }).positional("code", { type: "string" }),
             args => cmd(cmdConfirm(args, args.email, args.code))
         )
@@ -315,25 +315,27 @@ async function main(): Promise<void> {
             args => cmd(cmdLogin(args, args.email, args.password))
         )
         .command(
-            "new-app <name>",
-            "Create new app",
+            "create-app <name>",
+            "Create a new app",
             ya => ya.positional("name", { type: "string" }),
             args => cmd(cmdCreateApp(args, args.name))
         )
         .command("apps", "List all your apps", {}, args => cmd(listApps(args)))
         .command(
-            "experiments <appKey>",
+            "experiments <app key>",
             "Show experiments in app",
             ya => ya.positional("appKey", { type: "string" }),
             args => cmd(cmdListExperiments(args, args.appKey))
         )
-        .command("graphql", false, {}, args => cmd(graphQL(args))).argv;
+        .command("graphql", false, {}, args => cmd(graphQL(args)))
+        .wrap(yargs.terminalWidth()).argv;
 
     if (!didSomething || argv.help) {
         if ((await tryGetUserInfo()) === undefined) {
-            console.error("It seems you're not signed up to autotune yet.  Please use");
-            console.error('the "signup" command to sign up as a new user.  If you\'ve');
-            console.error('signed up already, use "login" to log in.');
+            console.error("You're not logged in to autotune.");
+            console.error("");
+            console.error("  Create account: autotune create-account EMAIL PASSWORD");
+            console.error("  Log in:         autotune login EMAIL PASSWORD");
             console.error("");
         }
         yargs.showHelp();
