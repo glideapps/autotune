@@ -1,5 +1,3 @@
-#!/usr/bin/env ts-node
-
 import { homedir } from "os";
 import * as path from "path";
 
