@@ -86,8 +86,11 @@ async function signup(_args: yargs.Arguments, email: string, password: string): 
 }
 
 async function confirm(_args: yargs.Arguments, email: string | undefined, code: string): Promise<void> {
+    let password: string | undefined = undefined;
     if (email === undefined) {
-        email = (await getUserInfo()).username;
+        const userInfo = await getUserInfo();
+        email = userInfo.username;
+        password = userInfo.password;
     }
     await cognito
         .confirmSignUp({
@@ -97,6 +100,11 @@ async function confirm(_args: yargs.Arguments, email: string | undefined, code: 
         })
         .promise();
     console.log("User creation confirmed");
+    if (password !== undefined) {
+        await authenticateWithPassword(email, password);
+    } else {
+        console.log("Please login to start using autotune");
+    }
 }
 
 async function authenticate(
@@ -137,12 +145,15 @@ async function authenticate(
     return tokens;
 }
 
-async function login(_args: yargs.Arguments, email: string, password: string): Promise<void> {
+async function authenticateWithPassword(email: string, password: string): Promise<void> {
     await authenticate(email, "USER_PASSWORD_AUTH", {
         USERNAME: email,
         PASSWORD: password
     });
+}
 
+async function login(_args: yargs.Arguments, email: string, password: string): Promise<void> {
+    await authenticateWithPassword(email, password);
     console.log("Logged in");
 }
 
