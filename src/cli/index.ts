@@ -319,8 +319,7 @@ function main(): void {
             ya => ya.positional("appKey", { type: "string" }),
             args => cmd(cmdListExperiments(args, args.appKey))
         )
-        // FIXME: remove before we ship, or don't show in help
-        .command("graphql", "Send GraphQL query", {}, args => cmd(graphQL(args))).argv;
+        .command("graphql", false, {}, args => cmd(graphQL(args))).argv;
 
     if (!didSomething || argv.help) {
         yargs.showHelp();
