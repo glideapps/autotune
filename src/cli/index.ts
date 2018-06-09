@@ -322,7 +322,7 @@ async function main(): Promise<void> {
         )
         .command("apps", "List all your apps", {}, args => cmd(listApps(args)))
         .command(
-            "experiments <app key>",
+            "experiments <appKey>",
             "Show experiments in app",
             ya => ya.positional("appKey", { type: "string" }),
             args => cmd(cmdListExperiments(args, args.appKey))
