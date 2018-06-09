@@ -8,6 +8,17 @@ This is why we created Autotune. With Autotune, you create special variables in 
 
 Not sure what your main call-to-action should be, or what color to use for the button? Not sure which social sharing features will be most relevant for your audience? Just make a few good guesses and let Autotune automatically discover and make the best decisions.
 
+## Sign up and create an app
+
+```shell
+$ npm install -g autotune
+$ autotune signup me@myemail.com mypa33word
+# Autotune will email you a confirmation code
+$ autotune confirm 123456
+$ autotune login me@myemail.com mypa33word
+$ autotune new-app "My first autotuned app"
+```
+
 ## Examples
 
 ### Main title
