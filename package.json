@@ -11,7 +11,7 @@
         "bump-version": "ts-node script/patch-npm-version.ts",
         "watch": "watch 'npm run build' src",
         "serve": "serve -l 3001",
-        "start": "concurrently 'npm run watch' 'npm run serve' 'sleep 1 && open http://localhost:3001/docs'",
+        "start": "concurrently 'npm run watch' 'npm run serve' 'sleep 1 && open http://localhost:3001/samples'",
         "tslint": "tslint --project ."
     },
     "files": [
