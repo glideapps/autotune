@@ -1,5 +1,7 @@
 import { startHTMLExperiments } from "./html";
-import { http, uuidv4, log, error, mapObject, getOwnPropertyValues } from "./util";
+import { http, uuidv4, log, error, mapObject, getOwnPropertyValues, getLocalLanguage, getTimeZoneOffset } from "./util";
+
+export type OptionValue = string;
 
 type AutotuneConfig = {
     appKey: string;
@@ -69,7 +71,8 @@ function startExperiment(theExperiment: Experiment): void {
         let experiments = mapObject(state.queuedStartedExperiments, e => ({
             instanceKey: e.key,
             options: e.options,
-            pick: e.pick
+            pick: e.pick,
+            pickedBest: e.pickedBest
         }));
 
         log("Starting experiments", experiments);
@@ -79,9 +82,13 @@ function startExperiment(theExperiment: Experiment): void {
 
         try {
             http("POST", api("/startExperiments"), {
-                version: 1,
+                version: 2,
                 appKey: state.appKey,
-                experiments
+                experiments,
+                ctx: {
+                    lang: getLocalLanguage(),
+                    tzo: getTimeZoneOffset()
+                }
             });
         } catch (e) {
             error("Failed to start experiments", e);
@@ -165,6 +172,7 @@ function experiment(name: string): Experiment {
 export class Experiment {
     payoff: number;
     pick?: string;
+    pickedBest?: boolean;
     options: string[];
 
     readonly key: string;
@@ -177,7 +185,8 @@ export class Experiment {
         this.key = uuidv4();
     }
 
-    private setValueAndStartExperiment(value: string): string {
+    private setValueAndStartExperiment(value: string, pickedBest: boolean): string {
+        this.pickedBest = pickedBest;
         if (this.pick === undefined) {
             this.pick = value;
             startExperiment(this);
@@ -198,14 +207,15 @@ export class Experiment {
     oneOf(...options: string[]): string {
         this.options = options;
 
+        const pickRandom = this.bestOption === undefined || Math.random() < this.epsilon;
         let one: string;
-        if (this.bestOption === undefined || Math.random() < this.epsilon) {
+        if (pickRandom) {
             one = options[Math.floor(Math.random() * options.length)];
         } else {
             one = this.bestOption;
         }
 
-        return this.setValueAndStartExperiment(one);
+        return this.setValueAndStartExperiment(one, !pickRandom);
     }
 }
 

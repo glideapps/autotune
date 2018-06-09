@@ -88,3 +88,16 @@ export function hash(s: string): number {
     }
     return Math.abs(hash);
 }
+
+export function getLocalLanguage(): string | undefined {
+  try {
+    const n = navigator as any;
+    return n.language || n.userLanguage;
+  } catch {
+    return undefined;
+  }
+}
+
+export function getTimeZoneOffset(): number {
+  return new Date().getTimezoneOffset();
+}

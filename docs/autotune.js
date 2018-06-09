@@ -181,9 +181,13 @@ function startExperiment(theExperiment) {
             state.startExperimentsTimer = undefined;
             try {
                 util_1.http("POST", api("/startExperiments"), {
-                    version: 1,
+                    version: 2,
                     appKey: state.appKey,
-                    experiments: experiments
+                    experiments: experiments,
+                    ctx: {
+                        lang: util_1.getLocalLanguage(),
+                        tzo: util_1.getTimeZoneOffset()
+                    }
                 });
             }
             catch (e) {
@@ -466,6 +470,20 @@ function hash(s) {
     return Math.abs(hash);
 }
 exports.hash = hash;
+function getLocalLanguage() {
+    try {
+        var n = navigator;
+        return n.language || n.userLanguage;
+    }
+    catch (_a) {
+        return undefined;
+    }
+}
+exports.getLocalLanguage = getLocalLanguage;
+function getTimeZoneOffset() {
+    return new Date().getTimezoneOffset();
+}
+exports.getTimeZoneOffset = getTimeZoneOffset;
 
 },{}]},{},[2])(2)
 });
