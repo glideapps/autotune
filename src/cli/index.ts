@@ -55,7 +55,7 @@ async function setUserInfo(info: UserInfo): Promise<void> {
     await storage.setItem(userInfoKey, info);
 }
 
-async function signup(_args: yargs.Arguments, email: string, password: string): Promise<void> {
+async function cmdSignup(_args: yargs.Arguments, email: string, password: string): Promise<void> {
     let response;
 
     try {
@@ -85,7 +85,7 @@ async function signup(_args: yargs.Arguments, email: string, password: string): 
     await setUserInfo({ username: email, password });
 }
 
-async function confirm(_args: yargs.Arguments, email: string | undefined, code: string): Promise<void> {
+async function cmdConfirm(_args: yargs.Arguments, email: string | undefined, code: string): Promise<void> {
     let password: string | undefined = undefined;
     if (email === undefined) {
         const userInfo = await getUserInfo();
@@ -152,7 +152,7 @@ async function authenticateWithPassword(email: string, password: string): Promis
     });
 }
 
-async function login(_args: yargs.Arguments, email: string, password: string): Promise<void> {
+async function cmdLogin(_args: yargs.Arguments, email: string, password: string): Promise<void> {
     await authenticateWithPassword(email, password);
     console.log("Logged in");
 }
@@ -205,7 +205,7 @@ async function requestWithAuth<T>(endpoint: string, body: T): Promise<any> {
     /* tslint:enable */
 }
 
-async function createApp(_args: yargs.Arguments, name: string): Promise<void> {
+async function cmdCreateApp(_args: yargs.Arguments, name: string): Promise<void> {
     const body: CreateAppKeyRequest = { name };
     const result: CreateAppKeyResponse = await requestWithAuth("createAppKey", body);
 
@@ -243,7 +243,7 @@ async function listApps(_args: yargs.Arguments): Promise<void> {
     }
 }
 
-async function listExperiments(_args: yargs.Arguments, appKey: string): Promise<void> {
+async function cmdListExperiments(_args: yargs.Arguments, appKey: string): Promise<void> {
     const app = await queryGraphQL<Application | null>(graphQLQueryApplication, "getApplication", { key: appKey });
     if (app === null) {
         throw new Error("Application not found");
@@ -284,32 +284,32 @@ function main(): void {
             "signup <email> <password>",
             "Sign up as a new user",
             ya => ya.positional("email", { type: "string" }).positional("password", { type: "string" }),
-            args => cmd(signup(args, args.email, args.password))
+            args => cmd(cmdSignup(args, args.email, args.password))
         )
         .command(
             "confirm <code> [email]",
             "Confirm user creation",
             ya => ya.positional("email", { type: "string" }).positional("code", { type: "string" }),
-            args => cmd(confirm(args, args.email, args.code))
+            args => cmd(cmdConfirm(args, args.email, args.code))
         )
         .command(
             "login <email> <password>",
             "Login",
             ya => ya.positional("email", { type: "string" }).positional("password", { type: "string" }),
-            args => cmd(login(args, args.email, args.password))
+            args => cmd(cmdLogin(args, args.email, args.password))
         )
         .command(
             "new-app <name>",
             "Create new app",
             ya => ya.positional("name", { type: "string" }),
-            args => cmd(createApp(args, args.name))
+            args => cmd(cmdCreateApp(args, args.name))
         )
         .command("apps", "List all your apps", {}, args => cmd(listApps(args)))
         .command(
             "experiments <appKey>",
             "Show experiments in app",
             ya => ya.positional("appKey", { type: "string" }),
-            args => cmd(listExperiments(args, args.appKey))
+            args => cmd(cmdListExperiments(args, args.appKey))
         )
         // FIXME: remove before we ship, or don't show in help
         .command("graphql", "Send GraphQL query", {}, args => cmd(graphQL(args))).argv;
