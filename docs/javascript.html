@@ -1,0 +1,17 @@
+<script src="../dist/index.browser.js"></script>
+<script>
+    autotune.initialize("0831cd5d-5c9c-489d-8fe6-f674bd09ec0e").then(() => {
+        // autotune.oneOf can take an object with keys to use for choosing,
+        // and any complex values:
+        const choice = autotune.oneOf("pick a function", {
+            alert: () => alert("Hi, browser!"),
+            console: () => console.log("Hello, console!")
+        });
+
+        // The experiment chooses between "alert" and "console" options,
+        // but the value is a function in this case.
+        choice();
+    });
+</script>
+
+<a href="#" onclick="autotune.complete()">Complete</a>
