@@ -7,8 +7,7 @@
     "types": "dist/index.d.ts",
     "unpkg": "dist/index.browser.min.js",
     "scripts": {
-        "browserify": "browserify dist/index.js --standalone autotune -o dist/index.browser.js && uglifyjs dist/index.browser.js --compress --mangle -o dist/index.browser.min.js",
-        "build": "rm -rf dist && tsc -p tsconfig.json && npm run browserify && cp dist/index.browser.js docs/autotune.js",
+        "build": "script/build.sh",
         "bump-version": "ts-node script/patch-npm-version.ts",
         "watch": "watch 'npm run build' src",
         "serve": "serve -l 3001 docs",
