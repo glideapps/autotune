@@ -23,7 +23,7 @@ $ autotune new-app "My first autotuned app"
 
 ### Main title
 
-Arguing with colleagues about what title to use for the homepage? Let Autotune pick the one that converts the most users:
+Not sure which title to use for your site? Let Autotune pick the one that converts the most users:
 
 ```html
 <!-- Load autotune along with what it has learned so far. -->
