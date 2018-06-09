@@ -1,23 +1,23 @@
-import { OptionValue, oneOf, complete } from ".";
+import { oneOf, complete } from ".";
 import { map, each, hash } from "./util";
 
 type AttributeExperiments = {
     [name: string]: {
-        options: OptionValue[];
+        options: string[];
         nodes: Element[];
     };
 };
 
 type TagExperiments = {
     [name: string]: Array<{
-        options: OptionValue[];
+        options: string[];
         node: Element;
     }>;
 };
 
 type ClassExperiments = {
     [name: string]: {
-        options: OptionValue[];
+        options: string[];
         node: Element;
     };
 };
