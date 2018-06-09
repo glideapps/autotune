@@ -1,22 +1,23 @@
 # autotune: automatic A/B testing for any app
 
-Everyone knows that A/B testing is critical to optimizing any app, but implementing tests and analyzing results can be awkward and time-consuming.
+A/B testing is critical to optimizing any app, but implementing tests and analyzing results can be awkward and time-consuming.
 
-As developers, we want adding A/B tests to any app to be as simple as adding a line of code. We also want machine learning algorithms to analyze our test results and optimize our app for us, automatically, without having to think twice.
+We want adding A/B tests to any app to be as simple as adding a line of code. We also want machine learning algorithms to analyze our test results and optimize our app for us, automatically, without having to think twice.
 
 This is why we created Autotune. With Autotune, you create special variables in your program that Autotune will automatically tune over time to improve outcomes.
 
 Not sure what your main call-to-action should be, or what color to use for the button? Not sure which social sharing features will be most relevant for your audience? Just make a few good guesses and let Autotune automatically discover and make the best decisions.
 
-## Sign up and create an app
+## Sign up
 
 ```shell
 $ npm install -g autotune
+
 $ autotune signup me@myemail.com mypa33word
 # Autotune will email you a confirmation code
+
 $ autotune confirm 123456
-$ autotune login me@myemail.com mypa33word
-$ autotune new-app "My first autotuned app"
+# Autotune will give you app key for your first app
 ```
 
 ## Examples
