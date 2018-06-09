@@ -67,7 +67,7 @@ Not sure if your main CTA should be `Log in` or `Sign in`? Let Autotune pick the
 ```javascript
 import * as autotune from "autotune";
 
-autotune.initialize("11397F73-FF90-4831-B7F7-85023F1741E4").then(() => {
+autotune.initialize("11397F73-FF90-4831-B7F7-85023F1741E4", () => {
     ReactDOM.render(
         <div>
             <h1>Welcome to my app!</h1>
@@ -89,7 +89,7 @@ Here we add an autotuned welcome message to a simple React app:
 import * as autotune from "autotune";
 
 // 1. Initialize
-autotune.initialize("11397F73-FF90-4831-B7F7-85023F1741E4").then(() => {
+autotune.initialize("11397F73-FF90-4831-B7F7-85023F1741E4", () => {
     // 2. Create a variable
     const title = autotune.oneOf("Welcome message", [
         "👋 Please sign in.",
@@ -100,8 +100,8 @@ autotune.initialize("11397F73-FF90-4831-B7F7-85023F1741E4").then(() => {
     ReactDOM.render(
         <div>
             // 3. Use the variable
-            <h1>{title.value}</h1>
-            <button onClick={() => /* 4. Indicate when a goal is completed */ autotune.complete()}>Sign in</button>
+            <h1>{title}</h1>
+            <button onClick={() => /* 4. Indicate success */ autotune.complete()}>Sign in</button>
         </div>,
         document.getElementById("root")
     );
