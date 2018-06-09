@@ -1,50 +1,65 @@
-# autotune: automatic A/B testing for any app
+# autotune
 
-Everyone knows that A/B testing is critical to optimizing any app, but implementing tests and analyzing results can be awkward and time-consuming.
+**Autotune automatically tunes your app over time to improve outcomes.** Not sure what your main call-to-action should be, or what color to use for the button? Just make a few good guesses and Autotune will make the best decision.
 
-As developers, we want adding A/B tests to any app to be as simple as adding a line of code. We also want machine learning algorithms to analyze our test results and optimize our app for us, automatically, without having to think twice.
-
-This is why we created Autotune. With Autotune, you create special variables in your program that Autotune will automatically tune over time to improve outcomes.
-
-Not sure what your main call-to-action should be, or what color to use for the button? Not sure which social sharing features will be most relevant for your audience? Just make a few good guesses and let Autotune automatically discover and make the best decisions.
-
-## Sign up and create an app
+## Create an account and your first app
 
 ```shell
 $ npm install -g autotune
-$ autotune signup me@myemail.com mypa33word
+$ autotune create-account <email> <password>
 # Autotune will email you a confirmation code
-$ autotune confirm 123456
-$ autotune login me@myemail.com mypa33word
-$ autotune new-app "My first autotuned app"
+$ autotune confirm <code>
+# Autotune will create your first app and give you a code sample
 ```
 
 ## Examples
 
-### Main title
+### Basic Tutorial
 
-Not sure which title to use for your site? Let Autotune pick the one that converts the most users:
+Once you've created an app, add a `<script>` tag in your page's `<head>` section. This loads the `autotune` library, data about your experiments so far, and initializes `autotune`:
 
 ```html
-<!-- Load autotune along with what it has learned so far. -->
-<script src="//js.autotune.xyz/11397f73-ff90-4831-b7f7-85023f1741e4.js"></script>
-
-<!-- Place a few options between <autotune> tags. -->
-<autotune>
-  <h1>We're revolutionizing healthcare with blockchain nursing.</h1>
-  <h1>We're revolutionizing local news with proximity drones.</h1>
-  <h1>We're revolutionizing meme delivery with AI-based CDNs.</h1>
-</autotune>
-
-<!-- Indicate a desirable outcome with the autotune attribute. -->
-<a href="/signup" autotune>Sign up</a>
+<head>
+    <!-- ... -->
+    <script src="//s3.us-east-2.amazonaws.com/autotune-clients/YOUR-APP-KEY.js"></script>
+</head>
 ```
 
-Autotune will test the options you've given between `<autotune>` tags, and automatically favor the option that gets most users to click `Sign up`.
+Next, create an experiment anywhere on your page:
 
-### Site style
+```html
+<!-- Shorthand syntax: -->
+<autotune>
+    <h1>The glass is half full</h1>
+    <h1>The glass is half empty</h1>
+<autotune>
 
-Have a couple different style options for your page? Use the `autotune-class` attribute to let Autotune apply the CSS class that performs the best:
+<!-- More explicitly:-->
+<autotune experiment="Main title">
+    <h1 option="half full">The glass is half full</h1>
+    <h1 option="half empty">The glass is half empty</h1>
+<autotune>
+
+<!-- Without custom tags (most compatible):-->
+<h1 data-experiment="Main title" data-option="half full">The glass is half full</h1>
+<h1 data-experiment="Main title" data-option="half empty">The glass is half empty</h1>
+```
+
+Finally, add the `autotune` attribute to links you want users to click:
+
+```html
+<!-- Shorthand syntax: -->
+<a href="/buy-now" autotune>Buy now</a>
+
+<!-- Using standard custom attribute:-->
+<a href="/buy-now" data-autotune>Buy now</a>
+```
+
+Autotune will decide which `<h1>` to display, and favor the choice that causes most users to click `Buy now`.
+
+### Autotuned styles
+
+Use the `autotune-class` attribute to let Autotune apply the CSS class that performs the best:
 
 ```html
 <style>
@@ -59,6 +74,8 @@ Have a couple different style options for your page? Use the `autotune-class` at
 ```
 
 Autotune will randomly assign either the `clean`, `busy`, or `extra-busy` class to your `body` tag, and then begin to favor the class that performs the best.
+
+## JavaScript API
 
 ### "Log in" or "Sign in"?
 
