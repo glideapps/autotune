@@ -96,7 +96,7 @@ async function createDemoApp() {
     console.log("");
     console.log("We've created a sample app for you to start with! Add this script tag:");
     console.log("");
-    console.log(`  <script src="//js.autotune.xyz.s3.us-east-2.amazonaws.com/${appKey}.js"></script>`);
+    console.log(`  <script src="//s3.us-east-2.amazonaws.com/js.autotune.xyz/${appKey}.js"></script>`);
     console.log("");
     console.log("Then create an experiment:");
     console.log("");

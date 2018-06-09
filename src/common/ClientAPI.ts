@@ -7,7 +7,7 @@ export type Outcomes = {
 };
 
 // The full clients, including the config, are generated at
-// GET to https://js.autotune.xyz.s3.us-east-2.amazonaws.com/$APP_KEY.json
+// GET to https://s3.us-east-2.amazonaws.com/js.autotune.xyz/$APP_KEY.json
 export type ClientConfig = {
     appKey: string;
     outcomes: Outcomes;
