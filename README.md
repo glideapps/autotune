@@ -19,7 +19,7 @@ Once you've created an app, add a `<script>` tag in your page's `<head>` section
 ```html
 <head>
     <!-- ... -->
-    <script src="//s3.us-east-2.amazonaws.com/autotune-clients/YOUR-APP-KEY.js"></script>
+    <script src="//s3.us-east-2.amazonaws.com/js.autotune.xyz/YOUR-APP-KEY.js"></script>
 </head>
 ```
 
