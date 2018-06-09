@@ -1,3 +1,0 @@
--   [Simple HTML](simple.html)
--   [JavaScript](javascript.html)
--   [Login form](login.html)
