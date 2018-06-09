@@ -219,10 +219,10 @@ export class Experiment {
 
     private static loadPick(name: string): string | undefined {
         let pick = Experiment.picks[name];
-        const savedPicks = localStorage[storageKey("picks")];
-        if (pick === undefined && savedPicks !== undefined) {
+        if (pick === undefined) {
             try {
-                Experiment.picks = JSON.parse(savedPicks);
+                const savedPicks = localStorage[storageKey("picks")];
+                Experiment.picks = savedPicks === undefined ? {} : JSON.parse(savedPicks);
             } catch (e) {
                 error("Could not load saved experiment picks:", e.message);
                 Experiment.picks = {};
