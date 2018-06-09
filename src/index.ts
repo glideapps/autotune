@@ -154,7 +154,7 @@ export async function initialize(appKey: string, outcomes: OutcomesResponse = un
     startHTMLExperiments();
 }
 
-export function experiment(name: string): Experiment {
+function experiment(name: string): Experiment {
     let ex = state.experiments[name] as Experiment;
     if (ex === undefined) {
         ex = state.experiments[name] = new Experiment(name);
