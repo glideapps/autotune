@@ -41,11 +41,19 @@ async function initStorage(): Promise<void> {
 
 const userInfoKey = "userInfo";
 
-async function getUserInfo(): Promise<UserInfo> {
+async function tryGetUserInfo(): Promise<UserInfo | undefined> {
     await initStorage();
-    const info = await storage.getItem(userInfoKey);
-    // FIXME: validate
-    return info;
+    return await storage.getItem(userInfoKey);
+}
+
+async function getUserInfo(): Promise<UserInfo> {
+    const userInfo = await tryGetUserInfo();
+    if (userInfo === undefined) {
+        console.error('You\'re not logged in :-(.  Please use "login" to log in');
+        console.error('or "signup" to sign up, if you haven\'t done so already.');
+        return process.exit(1);
+    }
+    return userInfo;
 }
 
 async function setUserInfo(info: UserInfo): Promise<void> {
