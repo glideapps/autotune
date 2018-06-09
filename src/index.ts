@@ -135,6 +135,11 @@ function completeExperiment(theExperiment: Experiment, then: CompletionCallback 
 }
 
 export async function initialize(appKey: string, outcomes: OutcomesResponse = undefined): Promise<void> {
+    if (state.appKey !== "") {
+        log("Initialized more than once");
+        return;
+    }
+
     log("Initialize", appKey);
 
     state.appKey = appKey;
