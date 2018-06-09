@@ -1,0 +1,19 @@
+query {
+    viewer {
+        username
+        applications {
+            name
+            key
+            experiments {
+                name
+                started
+                epsilon
+                options {
+                    name
+                    completed
+                    payoff
+                }
+            }
+        }
+    }
+}
