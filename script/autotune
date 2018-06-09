@@ -1,0 +1,3 @@
+#!/bin/bash
+
+ts-node src/cli/index.ts "$@"

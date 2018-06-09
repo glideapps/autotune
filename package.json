@@ -1,42 +1,57 @@
 {
-  "name": "autotune",
-  "version": "1.0.0",
-  "description": "Automatically tune JavaScript apps",
-  "main": "dist/index.js",
-  "types": "dist/index.d.ts",
-  "unpkg": "dist/index.browser.min.js",
-  "scripts": {
-    "browserify": "browserify dist/index.js --standalone autotune -o dist/index.browser.js && uglifyjs dist/index.browser.js --compress --mangle -o dist/index.browser.min.js",
-    "build": "rm -rf dist && tsc -p tsconfig.json && npm run browserify && cp dist/index.browser.js docs/autotune.js",
-    "bump-version": "ts-node scripts/patch-npm-version.ts",
-    "watch": "watch 'npm run build' src",
-    "serve": "serve -l 3001 docs",
-    "start": "concurrently 'npm run watch' 'npm run serve' 'sleep 1 && open http://localhost:3001/'",
-    "test": "echo \"Error: no test specified\" && exit 1"
-  },
-  "files": [
-    "dist"
-  ],
-  "repository": {
-    "type": "git",
-    "url": "git+ssh://git@github.com/quicktype/autotune.git"
-  },
-  "author": "typeguard, Inc.",
-  "license": "ISC",
-  "bugs": {
-    "url": "https://github.com/quicktype/autotune/issues"
-  },
-  "homepage": "https://github.com/quicktype/autotune#readme",
-  "devDependencies": {
-    "@types/shelljs": "^0.8.0",
-    "browserify": "^16.2.2",
-    "compare-versions": "^3.2.1",
-    "serve": "^8.1.2",
-    "shelljs": "^0.8.2",
-    "ts-node": "^6.0.5",
-    "typescript": "^2.8.3",
-    "uglify-js": "^3.3.27",
-    "watch": "^1.0.2",
-    "concurrently": "^3.5.1"
-  }
+    "name": "autotune",
+    "license": "Apache-2.0",
+    "version": "1.0.0",
+    "description": "Automatically tune JavaScript apps",
+    "main": "dist/index.js",
+    "types": "dist/index.d.ts",
+    "unpkg": "dist/index.browser.min.js",
+    "scripts": {
+        "browserify": "browserify dist/index.js --standalone autotune -o dist/index.browser.js && uglifyjs dist/index.browser.js --compress --mangle -o dist/index.browser.min.js",
+        "build": "rm -rf dist && tsc -p tsconfig.json && npm run browserify && cp dist/index.browser.js docs/autotune.js",
+        "bump-version": "ts-node script/patch-npm-version.ts",
+        "watch": "watch 'npm run build' src",
+        "serve": "serve -l 3001 docs",
+        "start": "concurrently 'npm run watch' 'npm run serve' 'sleep 1 && open http://localhost:3001/'",
+        "tslint": "tslint --project ."
+    },
+    "files": [
+        "dist"
+    ],
+    "repository": {
+        "type": "git",
+        "url": "git+ssh://git@github.com/quicktype/autotune.git"
+    },
+    "author": "typeguard, Inc.",
+    "bin": "dist/cli/index.js",
+    "bugs": {
+        "url": "https://github.com/quicktype/autotune/issues"
+    },
+    "homepage": "https://github.com/quicktype/autotune#readme",
+    "dependencies": {
+        "aws-sdk": "^2.247.1",
+        "jsonwebtoken": "^8.2.2",
+        "node-persist": "^3.0.1",
+        "request": "^2.87.0",
+        "request-promise": "^4.2.2",
+        "yargs": "^11.0.0"
+    },
+    "devDependencies": {
+        "@types/shelljs": "^0.8.0",
+        "browserify": "^16.2.2",
+        "compare-versions": "^3.2.1",
+        "serve": "^8.1.2",
+        "shelljs": "^0.8.2",
+        "ts-node": "^6.0.5",
+        "typescript": "^2.8.3",
+        "uglify-js": "^3.3.27",
+        "watch": "^1.0.2",
+        "concurrently": "^3.5.1",
+        "@types/jsonwebtoken": "^7.2.7",
+        "@types/node": "^8.10.12",
+        "@types/node-persist": "0.0.33",
+        "@types/request-promise": "^4.1.41",
+        "@types/yargs": "^11.0.0",
+        "tslint": "^5.10.0"
+    }
 }
