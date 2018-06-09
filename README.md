@@ -58,7 +58,7 @@ Have a couple different style options for your page? Use the `autotune-class` at
 </body>
 ```
 
-Autotune will test the options you've given between `<autotune>` tags, and automatically favor the option that gets most users to click `Sign up`.
+Autotune will randomly assign either the `clean`, `busy`, or `extra-busy` class to your `body` tag, and then begin to favor the class that performs the best.
 
 ### "Log in" or "Sign in"?
 
