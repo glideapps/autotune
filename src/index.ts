@@ -1,8 +1,6 @@
 import { startHTMLExperiments } from "./html";
 import { http, uuidv4, log, error, mapObject, getOwnPropertyValues } from "./util";
 
-export type OptionValue = string;
-
 type AutotuneConfig = {
     appKey: string;
     outcomes: OutcomesResponse;
@@ -11,14 +9,14 @@ type AutotuneConfig = {
 type CompleteExperimentsRequest = {
     appKey: string;
     experiments: {
-        [key: string]: { pick: OptionValue; payoff: number };
+        [key: string]: { pick: string; payoff: number };
     };
 };
 
 type StartExperimentsRequest = {
     appKey: string;
     experiments: {
-        [experimentName: string]: { options: OptionValue[]; pick: OptionValue };
+        [experimentName: string]: { options: string[]; pick: string };
     };
 };
 
@@ -30,7 +28,7 @@ type StartExperimentsResponse = {
 };
 
 export type OutcomesResponse = {
-    [experimentName: string]: { bestOption: OptionValue; epsilon: number };
+    [experimentName: string]: { bestOption: string; epsilon: number };
 };
 
 function api(path: string) {
@@ -43,10 +41,10 @@ function outcomesUrl(appKey: string) {
 
 const state: {
     appKey: string;
-    experiments: { [name: string]: Experiment<OptionValue> };
-    defaultCompletions: { [name: string]: Experiment<OptionValue> };
-    queuedCompletedExperiments: { [name: string]: Experiment<OptionValue> };
-    queuedStartedExperiments: { [name: string]: Experiment<OptionValue> };
+    experiments: { [name: string]: Experiment };
+    defaultCompletions: { [name: string]: Experiment };
+    queuedCompletedExperiments: { [name: string]: Experiment };
+    queuedStartedExperiments: { [name: string]: Experiment };
     startExperimentsTimer?: number;
     completeExperimentsTimer?: number;
 } = {
@@ -57,14 +55,14 @@ const state: {
     queuedStartedExperiments: {}
 };
 
-function startExperiment(experiment: Experiment<OptionValue>): void {
+function startExperiment(theExperiment: Experiment): void {
     if (state.startExperimentsTimer !== undefined) {
         clearTimeout(state.startExperimentsTimer);
         state.startExperimentsTimer = undefined;
     }
 
     // 1. Enqueue the experiment for sending
-    state.queuedStartedExperiments[experiment.name] = experiment;
+    state.queuedStartedExperiments[theExperiment.name] = theExperiment;
 
     // 2. start a timer to send started queue
     state.startExperimentsTimer = <any>setTimeout(async () => {
@@ -92,14 +90,14 @@ function startExperiment(experiment: Experiment<OptionValue>): void {
     }, 100);
 }
 
-function completeExperiment(experiment: Experiment<OptionValue>, then: CompletionCallback | undefined): void {
+function completeExperiment(theExperiment: Experiment, then: CompletionCallback | undefined): void {
     if (state.completeExperimentsTimer !== undefined) {
         clearTimeout(state.completeExperimentsTimer);
         state.completeExperimentsTimer = undefined;
     }
 
     // 1. Enqueue the experiment for sending
-    state.queuedCompletedExperiments[experiment.name] = experiment;
+    state.queuedCompletedExperiments[theExperiment.name] = theExperiment;
 
     // 2. start a timer to send completed queue
     state.completeExperimentsTimer = <any>setTimeout(async () => {
@@ -156,30 +154,30 @@ export async function initialize(appKey: string, outcomes: OutcomesResponse = un
     startHTMLExperiments();
 }
 
-export function experiment<T extends OptionValue>(name: string): Experiment<T> {
-    let ex = state.experiments[name] as Experiment<T>;
+export function experiment(name: string): Experiment {
+    let ex = state.experiments[name] as Experiment;
     if (ex === undefined) {
-        ex = state.experiments[name] = new Experiment<T>(name);
+        ex = state.experiments[name] = new Experiment(name);
     }
     return ex;
 }
 
-export class Experiment<T extends OptionValue> {
+export class Experiment {
     payoff: number;
-    pick?: T;
-    options: T[];
+    pick?: string;
+    options: string[];
 
     readonly key: string;
 
     constructor(
         public readonly name: string,
-        readonly bestOption: T | undefined = undefined,
+        readonly bestOption: string | undefined = undefined,
         readonly epsilon: number = 1
     ) {
         this.key = uuidv4();
     }
 
-    private setValueAndStartExperiment(value: T): T {
+    private setValueAndStartExperiment(value: string): string {
         if (this.pick === undefined) {
             this.pick = value;
             startExperiment(this);
@@ -197,10 +195,10 @@ export class Experiment<T extends OptionValue> {
         return this.oneOf("true" as any, "false" as any) === "true";
     }
 
-    oneOf(...options: T[]): T {
+    oneOf(...options: string[]): string {
         this.options = options;
 
-        let one: T;
+        let one: string;
         if (this.bestOption === undefined || Math.random() < this.epsilon) {
             one = options[Math.floor(Math.random() * options.length)];
         } else {
@@ -217,8 +215,8 @@ export function flipCoin(experimentName: string): boolean {
     return ex.flipCoin();
 }
 
-export function oneOf<T extends OptionValue>(experimentName: string, options: T[]): T {
-    const ex = experiment<T>(experimentName);
+export function oneOf(experimentName: string, options: string[]): string {
+    const ex = experiment(experimentName);
     state.defaultCompletions[experimentName] = ex;
     return ex.oneOf(...options);
 }
