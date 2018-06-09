@@ -215,10 +215,19 @@ export function flipCoin(experimentName: string): boolean {
     return ex.flipCoin();
 }
 
-export function oneOf(experimentName: string, options: string[]): string {
+export function oneOf(experimentName: string, options: string[]): string;
+export function oneOf<T>(experimentName: string, options: { [label: string]: T }): T;
+export function oneOf<T>(experimentName: string, options: string[] | { [label: string]: T }): T | string {
     const ex = experiment(experimentName);
     state.defaultCompletions[experimentName] = ex;
-    return ex.oneOf(...options);
+
+    const optionsIsArray = Object.prototype.toString.call(options) === "[object Array]";
+    if (optionsIsArray) {
+        return ex.oneOf(...(options as string[]));
+    } else {
+        const choice = ex.oneOf(...Object.getOwnPropertyNames(options));
+        return (options as { [label: string]: T })[choice];
+    }
 }
 
 export type CompletionCallback = () => void;
