@@ -1,5 +1,15 @@
 import { startHTMLExperiments } from "./html";
-import { http, uuidv4, log, error, mapObject, getOwnPropertyValues, getLocalLanguage, getTimeZoneOffset } from "./util";
+import {
+    http,
+    uuidv4,
+    log,
+    error,
+    mapObject,
+    getOwnPropertyValues,
+    getLocalLanguage,
+    getTimeZoneOffset,
+    debounce
+} from "./util";
 
 export type OptionValue = string;
 
@@ -174,7 +184,41 @@ function experiment(name: string): Experiment {
     return ex;
 }
 
+function storageKey(path: string): string {
+    return `autotune.v1.${state.appKey}.${path}`;
+}
 export class Experiment {
+    private static picks: { [name: string]: string } = {};
+
+    private static loadPick(name: string): string | undefined {
+        let pick = Experiment.picks[name];
+        const savedPicks = localStorage[storageKey("picks")];
+        if (pick === undefined && savedPicks !== undefined) {
+            try {
+                Experiment.picks = JSON.parse(savedPicks);
+            } catch (e) {
+                error("Could not load saved experiment picks:", e.message);
+                Experiment.picks = {};
+            }
+            pick = Experiment.picks[name];
+        }
+        return pick;
+    }
+
+    private static savePick(name: string, pick: string) {
+        Experiment.picks[name] = pick;
+        Experiment.persistPicks();
+    }
+
+    private static persistPicks = debounce(() => {
+        log("Writing saved experiment picks");
+        try {
+            localStorage[storageKey("picks")] = JSON.stringify(Experiment.picks);
+        } catch (e) {
+            error("Could not save experiment picks:", e.message);
+        }
+    }, 100);
+
     payoff: number;
     pick?: string;
     pickedBest?: boolean;
@@ -212,15 +256,21 @@ export class Experiment {
     oneOf(...options: string[]): string {
         this.options = options;
 
-        const pickRandom = this.bestOption === undefined || Math.random() < this.epsilon;
-        let one: string;
-        if (pickRandom) {
-            one = options[Math.floor(Math.random() * options.length)];
-        } else {
-            one = this.bestOption;
+        const savedPick = Experiment.loadPick(this.name);
+        if (savedPick !== undefined && this.options.indexOf(savedPick) !== -1) {
+            return this.setValueAndStartExperiment(savedPick, savedPick === this.bestOption);
         }
 
-        return this.setValueAndStartExperiment(one, !pickRandom);
+        const pickRandom = this.bestOption === undefined || Math.random() < this.epsilon;
+        let pick: string;
+        if (pickRandom) {
+            pick = options[Math.floor(Math.random() * options.length)];
+        } else {
+            pick = this.bestOption;
+        }
+
+        Experiment.savePick(this.name, pick);
+        return this.setValueAndStartExperiment(pick, !pickRandom);
     }
 }
 
