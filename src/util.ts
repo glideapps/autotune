@@ -31,23 +31,29 @@ export function mapObject<T, S>(x: { [name: string]: T }, f: (v: T, k: string) =
     return result;
 }
 
-export function http(method: "POST" | "GET", url: string, data: any = undefined): Promise<any> {
-    return new Promise((resolve, reject) => {
-        if (typeof XMLHttpRequest === "undefined") {
-            // TODO support node
-            return reject("Not running in browser");
-        }
+export function http(
+    method: "POST" | "GET",
+    url: string,
+    data: any,
+    resolve: (data: any) => void,
+    reject: (err: Error) => void
+): void {
+    if (typeof XMLHttpRequest === "undefined") {
+        // TODO support node
+        return reject(new Error("Not running in browser"));
+    }
 
+    try {
         let request = new XMLHttpRequest();
         request.open(method, url, true);
         request.setRequestHeader("Content-Type", "application/json");
-        request.onerror = () => reject(request.statusText);
+        request.onerror = () => reject(new Error(request.statusText));
         request.onreadystatechange = () => {
             if (request.readyState === 4)
                 if (request.status === 200) {
                     resolve(JSON.parse(request.responseText));
                 } else {
-                    reject(`Request failed with status ${request.status}`);
+                    reject(new Error(`Request failed with status ${request.status}`));
                 }
         };
         if (data !== undefined) {
@@ -55,7 +61,9 @@ export function http(method: "POST" | "GET", url: string, data: any = undefined)
         } else {
             request.send();
         }
-    });
+    } catch (e) {
+        return reject(e);
+    }
 }
 
 export function map<T, U>(

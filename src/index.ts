@@ -67,7 +67,7 @@ function startExperiment(theExperiment: Experiment): void {
     state.queuedStartedExperiments[theExperiment.name] = theExperiment;
 
     // 2. start a timer to send started queue
-    state.startExperimentsTimer = <any>setTimeout(async () => {
+    state.startExperimentsTimer = <any>setTimeout(() => {
         let experiments = mapObject(state.queuedStartedExperiments, e => ({
             instanceKey: e.key,
             options: e.options,
@@ -80,8 +80,10 @@ function startExperiment(theExperiment: Experiment): void {
         state.queuedStartedExperiments = {};
         state.startExperimentsTimer = undefined;
 
-        try {
-            http("POST", api("/startExperiments"), {
+        http(
+            "POST",
+            api("/startExperiments"),
+            {
                 version: 2,
                 appKey: state.appKey,
                 experiments,
@@ -89,11 +91,12 @@ function startExperiment(theExperiment: Experiment): void {
                     lang: getLocalLanguage(),
                     tzo: getTimeZoneOffset()
                 }
-            });
-        } catch (e) {
-            error("Failed to start experiments", e);
-            return;
-        }
+            },
+            () => {
+                return;
+            },
+            e => error("Failed to start experiments", e)
+        );
     }, 100);
 }
 
@@ -107,7 +110,7 @@ function completeExperiment(theExperiment: Experiment, then: CompletionCallback 
     state.queuedCompletedExperiments[theExperiment.name] = theExperiment;
 
     // 2. start a timer to send completed queue
-    state.completeExperimentsTimer = <any>setTimeout(async () => {
+    state.completeExperimentsTimer = <any>setTimeout(() => {
         const experiments = getOwnPropertyValues(state.queuedCompletedExperiments);
 
         state.queuedCompletedExperiments = {};
@@ -118,23 +121,47 @@ function completeExperiment(theExperiment: Experiment, then: CompletionCallback 
 
         log("Completing experiments", experimentsByKey);
 
-        try {
-            await http("POST", api("/completeExperiments"), {
-                version: 1,
-                appKey: state.appKey,
-                experiments: experimentsByKey
-            });
-        } catch (e) {
-            error("Failed to complete experiments", e);
-        } finally {
+        function callThen() {
             if (then !== undefined) {
                 then();
             }
         }
+
+        http(
+            "POST",
+            api("/completeExperiments"),
+            {
+                version: 1,
+                appKey: state.appKey,
+                experiments: experimentsByKey
+            },
+            () => callThen(),
+            e => {
+                error("Failed to complete experiments", e);
+                callThen();
+            }
+        );
     }, 10);
 }
 
-export async function initialize(appKey: string, outcomes: OutcomesResponse = undefined): Promise<void> {
+function finishInit(outcomes: OutcomesResponse): void {
+    try {
+        Object.getOwnPropertyNames(outcomes).forEach(name => {
+            // If there's already an experiment there, it's already running,
+            // so don't overwrite it.
+            if (state.experiments[name] !== undefined) return;
+
+            const { bestOption, epsilon } = outcomes[name];
+            state.experiments[name] = new Experiment(name, bestOption, epsilon);
+        });
+
+        startHTMLExperiments();
+    } catch (e) {
+        error("Couldn not finish init", e);
+    }
+}
+
+export function initialize(appKey: string, then: () => void, outcomes: OutcomesResponse = undefined): void {
     if (state.appKey !== "") {
         log("Initialized more than once");
         return;
@@ -144,26 +171,26 @@ export async function initialize(appKey: string, outcomes: OutcomesResponse = un
 
     state.appKey = appKey;
 
-    if (outcomes === undefined) {
-        outcomes = {};
-        try {
-            outcomes = await http("GET", outcomesUrl(appKey));
-            log("Got outcomes", outcomes);
-        } catch (e) {
-            error("Could not get outcomes", e);
-        }
+    if (outcomes !== undefined) {
+        finishInit(outcomes);
+        return;
     }
 
-    Object.getOwnPropertyNames(outcomes).forEach(name => {
-        // If there's already an experiment there, it's already running,
-        // so don't overwrite it.
-        if (state.experiments[name] !== undefined) return;
-
-        const { bestOption, epsilon } = outcomes[name];
-        state.experiments[name] = new Experiment(name, bestOption, epsilon);
-    });
-
-    startHTMLExperiments();
+    http(
+        "GET",
+        outcomesUrl(appKey),
+        undefined,
+        o => {
+            log("Got outcomes", o);
+            finishInit(o);
+            then();
+        },
+        e => {
+            error("Could not get outcomes", e);
+            finishInit({});
+            then();
+        }
+    );
 }
 
 function experiment(name: string): Experiment {
@@ -199,7 +226,7 @@ export class Experiment {
         return this.pick;
     }
 
-    async complete(payoff: number = 1, then: CompletionCallback | undefined) {
+    complete(payoff: number = 1, then: CompletionCallback | undefined) {
         this.payoff = payoff;
         completeExperiment(this, then);
     }
@@ -270,5 +297,11 @@ export function complete(scoreOrThen: number | CompletionCallback | undefined, m
 
 if (typeof window !== "undefined" && typeof (window as any).autotuneConfig !== "undefined") {
     const config: AutotuneConfig = (window as any).autotuneConfig;
-    initialize(config.appKey, config.outcomes);
+    initialize(
+        config.appKey,
+        () => {
+            return;
+        },
+        config.outcomes
+    );
 }
