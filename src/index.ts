@@ -67,7 +67,7 @@ function startExperiment(theExperiment: Experiment): void {
     state.queuedStartedExperiments[theExperiment.name] = theExperiment;
 
     // 2. start a timer to send started queue
-    state.startExperimentsTimer = <any>setTimeout(async () => {
+    state.startExperimentsTimer = <any>setTimeout(() => {
         let experiments = mapObject(state.queuedStartedExperiments, e => ({
             instanceKey: e.key,
             options: e.options,
@@ -110,7 +110,7 @@ function completeExperiment(theExperiment: Experiment, then: CompletionCallback 
     state.queuedCompletedExperiments[theExperiment.name] = theExperiment;
 
     // 2. start a timer to send completed queue
-    state.completeExperimentsTimer = <any>setTimeout(async () => {
+    state.completeExperimentsTimer = <any>setTimeout(() => {
         const experiments = getOwnPropertyValues(state.queuedCompletedExperiments);
 
         state.queuedCompletedExperiments = {};
@@ -145,16 +145,20 @@ function completeExperiment(theExperiment: Experiment, then: CompletionCallback 
 }
 
 function finishInit(outcomes: OutcomesResponse): void {
-    Object.getOwnPropertyNames(outcomes).forEach(name => {
-        // If there's already an experiment there, it's already running,
-        // so don't overwrite it.
-        if (state.experiments[name] !== undefined) return;
+    try {
+        Object.getOwnPropertyNames(outcomes).forEach(name => {
+            // If there's already an experiment there, it's already running,
+            // so don't overwrite it.
+            if (state.experiments[name] !== undefined) return;
 
-        const { bestOption, epsilon } = outcomes[name];
-        state.experiments[name] = new Experiment(name, bestOption, epsilon);
-    });
+            const { bestOption, epsilon } = outcomes[name];
+            state.experiments[name] = new Experiment(name, bestOption, epsilon);
+        });
 
-    startHTMLExperiments();
+        startHTMLExperiments();
+    } catch (e) {
+        error("Couldn not finish init", e);
+    }
 }
 
 export function initialize(appKey: string, then: () => void, outcomes: OutcomesResponse = undefined): void {
@@ -179,10 +183,12 @@ export function initialize(appKey: string, then: () => void, outcomes: OutcomesR
         o => {
             log("Got outcomes", o);
             finishInit(o);
+            then();
         },
         e => {
             error("Could not get outcomes", e);
             finishInit({});
+            then();
         }
     );
 }
@@ -220,7 +226,7 @@ export class Experiment {
         return this.pick;
     }
 
-    async complete(payoff: number = 1, then: CompletionCallback | undefined) {
+    complete(payoff: number = 1, then: CompletionCallback | undefined) {
         this.payoff = payoff;
         completeExperiment(this, then);
     }
