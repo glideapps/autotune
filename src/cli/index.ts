@@ -102,6 +102,12 @@ async function cmdConfirm(_args: yargs.Arguments, email: string | undefined, cod
     console.log("User creation confirmed");
     if (password !== undefined) {
         await authenticateWithPassword(email, password);
+
+        const appKey = await createApp("MyFirstApp");
+        console.log("");
+        console.log("Here's your first app key:");
+        console.log(`    ${appKey}`);
+        // FIXME: Nicer message, link to tutorial/examples
     } else {
         console.log("Please login to start using autotune");
     }
@@ -205,11 +211,15 @@ async function requestWithAuth<T>(endpoint: string, body: T): Promise<any> {
     /* tslint:enable */
 }
 
-async function cmdCreateApp(_args: yargs.Arguments, name: string): Promise<void> {
+async function createApp(name: string): Promise<string> {
     const body: CreateAppKeyRequest = { name };
     const result: CreateAppKeyResponse = await requestWithAuth("createAppKey", body);
+    return result.appKey;
+}
 
-    console.log(`App key: ${result.appKey}`);
+async function cmdCreateApp(_args: yargs.Arguments, name: string): Promise<void> {
+    const appKey = await createApp(name);
+    console.log(`App key: ${appKey}`);
 }
 
 const graphQLQueryAll =
