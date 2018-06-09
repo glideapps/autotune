@@ -4,7 +4,7 @@ const DEBUG = true;
 export function uuidv4() {
     return "xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx".replace(/[xy]/g, c => {
         let r = (Math.random() * 16) | 0;
-        let v = c == "x" ? r : (r & 0x3) | 0x8;
+        let v = c === "x" ? r : (r & 0x3) | 0x8;
         return v.toString(16);
     });
 }
@@ -43,8 +43,8 @@ export function http(method: "POST" | "GET", url: string, data: any = undefined)
         request.setRequestHeader("Content-Type", "application/json");
         request.onerror = () => reject(request.statusText);
         request.onreadystatechange = () => {
-            if (request.readyState == 4)
-                if (request.status == 200) {
+            if (request.readyState === 4)
+                if (request.status === 200) {
                     resolve(JSON.parse(request.responseText));
                 } else {
                     reject(`Request failed with status ${request.status}`);
@@ -80,24 +80,24 @@ export function each<T>(
 }
 
 export function hash(s: string): number {
-    let hash = 0;
-    for (var i = 0; i < s.length; i++) {
-        var character = s.charCodeAt(i);
-        hash = (hash << 5) - hash + character;
-        hash = hash & hash; // Convert to 32bit integer
+    let h = 0;
+    for (let i = 0; i < s.length; i++) {
+        let character = s.charCodeAt(i);
+        h = (h << 5) - h + character;
+        h = h & h; // Convert to 32bit integer
     }
-    return Math.abs(hash);
+    return Math.abs(h);
 }
 
 export function getLocalLanguage(): string | undefined {
-  try {
-    const n = navigator as any;
-    return n.language || n.userLanguage;
-  } catch {
-    return undefined;
-  }
+    try {
+        const n = navigator as any;
+        return n.language || n.userLanguage;
+    } catch {
+        return undefined;
+    }
 }
 
 export function getTimeZoneOffset(): number {
-  return new Date().getTimezoneOffset();
+    return new Date().getTimezoneOffset();
 }
