@@ -91,6 +91,26 @@ async function cmdSignup(_args: yargs.Arguments, email: string, password: string
     await setUserInfo({ username: email, password });
 }
 
+async function createDemoApp() {
+    const appKey = await createApp("My sample autotune app");
+    console.log("");
+    console.log("We've created a sample app for you to start with! Add this script tag:");
+    console.log("");
+    console.log(`  <script src="//s3.us-east-2.amazonaws.com/autotune-clients/${appKey}.js"></script>`);
+    console.log("");
+    console.log("Then create an experiment:");
+    console.log("");
+    console.log(`  <autotune>`);
+    console.log(`    <h1>The glass is half full</h1>`);
+    console.log(`    <h1>The glass is half empty</h1>`);
+    console.log(`  <autotune>`);
+    console.log("");
+    console.log("Finally, add the autotune attribute to links that you want users to click:");
+    console.log("");
+    console.log(`  <a href="/buy" autotune>Buy now</a>`);
+    console.log("");
+}
+
 async function cmdConfirm(_args: yargs.Arguments, email: string | undefined, code: string): Promise<void> {
     let password: string | undefined = undefined;
     if (email === undefined) {
@@ -108,12 +128,7 @@ async function cmdConfirm(_args: yargs.Arguments, email: string | undefined, cod
     console.log("User creation confirmed");
     if (password !== undefined) {
         await authenticateWithPassword(email, password);
-
-        const appKey = await createApp("My first autotune app");
-        console.log("");
-        console.log("Here's your first app key:");
-        console.log(`    ${appKey}`);
-        // FIXME: Nicer message, link to tutorial/examples
+        await createDemoApp();
     } else {
         console.log("Please login to start using autotune");
     }
