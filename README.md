@@ -42,6 +42,24 @@ Arguing with colleagues about what title to use for the homepage? Let Autotune p
 
 Autotune will test the options you've given between `<autotune>` tags, and automatically favor the option that gets most users to click `Sign up`.
 
+### Site style
+
+Have a couple different style options for your page? Use the `autotune-class` attribute to let Autotune apply the CSS class that performs the best:
+
+```html
+<style>
+.clean      { ... }
+.busy       { ... }
+.extra-busy { ... }
+</style>
+
+<body autotune-class="clean busy extra-busy">
+  ...
+</body>
+```
+
+Autotune will test the options you've given between `<autotune>` tags, and automatically favor the option that gets most users to click `Sign up`.
+
 ### "Log in" or "Sign in"?
 
 Not sure if your main CTA should be `Log in` or `Sign in`? Let Autotune pick the one that works best:
