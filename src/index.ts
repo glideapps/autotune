@@ -1,4 +1,13 @@
+import {
+    ClientConfig,
+    Outcomes,
+    CompleteExperimentsRequest,
+    StartExperimentsRequest,
+    StartExperimentsResponse
+} from "./common/ClientAPI";
+
 import { startHTMLExperiments } from "./html";
+
 import {
     http,
     uuidv4,
@@ -10,38 +19,6 @@ import {
     getTimeZoneOffset,
     debounce
 } from "./util";
-
-export type OptionValue = string;
-
-type AutotuneConfig = {
-    appKey: string;
-    outcomes: OutcomesResponse;
-};
-
-type CompleteExperimentsRequest = {
-    appKey: string;
-    experiments: {
-        [key: string]: { pick: string; payoff: number };
-    };
-};
-
-type StartExperimentsRequest = {
-    appKey: string;
-    experiments: {
-        [experimentName: string]: { options: string[]; pick: string };
-    };
-};
-
-type StartExperimentsResponse = {
-    errorMessage?: string;
-    experiments: {
-        [experimentName: string]: { key: string };
-    };
-};
-
-export type OutcomesResponse = {
-    [experimentName: string]: { bestOption: string; epsilon: number };
-};
 
 function api(path: string) {
     return `https://2vyiuehl9j.execute-api.us-east-2.amazonaws.com/prod/${path}`;
@@ -154,7 +131,7 @@ function completeExperiment(theExperiment: Experiment, then: CompletionCallback 
     }, 10);
 }
 
-function finishInit(outcomes: OutcomesResponse): void {
+function finishInit(outcomes: Outcomes): void {
     try {
         Object.getOwnPropertyNames(outcomes).forEach(name => {
             // If there's already an experiment there, it's already running,
@@ -171,7 +148,7 @@ function finishInit(outcomes: OutcomesResponse): void {
     }
 }
 
-export function initialize(appKey: string, then: () => void, outcomes: OutcomesResponse = undefined): void {
+export function initialize(appKey: string, then: () => void, outcomes: Outcomes = undefined): void {
     if (state.appKey !== "") {
         log("Initialized more than once");
         return;
@@ -346,7 +323,7 @@ export function complete(scoreOrThen: number | CompletionCallback | undefined, m
 }
 
 if (typeof window !== "undefined" && typeof (window as any).autotuneConfig !== "undefined") {
-    const config: AutotuneConfig = (window as any).autotuneConfig;
+    const config: ClientConfig = (window as any).autotuneConfig;
     initialize(
         config.appKey,
         () => {
