@@ -34,8 +34,6 @@ const state: {
     defaultCompletions: { [name: string]: Experiment };
     queuedCompletedExperiments: { [name: string]: Experiment };
     queuedStartedExperiments: { [name: string]: Experiment };
-    startExperimentsTimer?: number;
-    completeExperimentsTimer?: number;
 } = {
     appKey: "",
     experiments: {},
@@ -45,91 +43,77 @@ const state: {
 };
 
 function startExperiment(theExperiment: Experiment): void {
-    if (state.startExperimentsTimer !== undefined) {
-        clearTimeout(state.startExperimentsTimer);
-        state.startExperimentsTimer = undefined;
-    }
-
-    // 1. Enqueue the experiment for sending
     state.queuedStartedExperiments[theExperiment.name] = theExperiment;
-
-    // 2. start a timer to send started queue
-    state.startExperimentsTimer = <any>setTimeout(() => {
-        let experiments = mapObject(state.queuedStartedExperiments, e => ({
-            instanceKey: e.key,
-            options: e.options,
-            pick: e.pick,
-            pickedBest: e.pickedBest
-        }));
-
-        log("Starting experiments", experiments);
-
-        state.queuedStartedExperiments = {};
-        state.startExperimentsTimer = undefined;
-
-        http(
-            "POST",
-            api("/startExperiments"),
-            {
-                version: 2,
-                appKey: state.appKey,
-                experiments,
-                ctx: {
-                    lang: getLocalLanguage(),
-                    tzo: getTimeZoneOffset()
-                }
-            },
-            () => {
-                return;
-            },
-            e => error("Failed to start experiments", e)
-        );
-    }, 100);
+    startExperimentsDebounced();
 }
+
+const startExperimentsDebounced = debounce(() => {
+    let experiments = mapObject(state.queuedStartedExperiments, e => ({
+        instanceKey: e.key,
+        options: e.options,
+        pick: e.pick,
+        pickedBest: e.pickedBest
+    }));
+
+    log("Starting experiments", experiments);
+
+    state.queuedStartedExperiments = {};
+
+    http(
+        "POST",
+        api("/startExperiments"),
+        {
+            version: 2,
+            appKey: state.appKey,
+            experiments,
+            ctx: {
+                lang: getLocalLanguage(),
+                tzo: getTimeZoneOffset()
+            }
+        },
+        () => {
+            return;
+        },
+        e => error("Failed to start experiments", e)
+    );
+}, 100);
 
 function completeExperiment(theExperiment: Experiment, then: CompletionCallback | undefined): void {
-    if (state.completeExperimentsTimer !== undefined) {
-        clearTimeout(state.completeExperimentsTimer);
-        state.completeExperimentsTimer = undefined;
+    state.queuedCompletedExperiments[theExperiment.name] = theExperiment;
+    completeExperimentsDebounced(then);
+}
+
+const completeExperimentsDebounced = debounce((then: CompletionCallback | undefined) => {
+    const experiments = getOwnPropertyValues(state.queuedCompletedExperiments);
+
+    state.queuedCompletedExperiments = {};
+
+    const experimentsByKey: CompleteExperimentsRequest["experiments"] = {};
+    experiments.forEach(e => (experimentsByKey[e.key] = { pick: e.pick, payoff: e.payoff }));
+
+    log("Completing experiments", experimentsByKey);
+
+    function callThen() {
+        if (then !== undefined) {
+            then();
+        }
     }
 
-    // 1. Enqueue the experiment for sending
-    state.queuedCompletedExperiments[theExperiment.name] = theExperiment;
-
-    // 2. start a timer to send completed queue
-    state.completeExperimentsTimer = <any>setTimeout(() => {
-        const experiments = getOwnPropertyValues(state.queuedCompletedExperiments);
-
-        state.queuedCompletedExperiments = {};
-        state.completeExperimentsTimer = undefined;
-
-        const experimentsByKey: CompleteExperimentsRequest["experiments"] = {};
-        experiments.forEach(e => (experimentsByKey[e.key] = { pick: e.pick, payoff: e.payoff }));
-
-        log("Completing experiments", experimentsByKey);
-
-        function callThen() {
-            if (then !== undefined) {
-                then();
-            }
+    http(
+        "POST",
+        api("/completeExperiments"),
+        {
+            version: 1,
+            appKey: state.appKey,
+            experiments: experimentsByKey
+        },
+        () => callThen(),
+        e => {
+            error("Failed to complete experiments", e);
+            callThen();
         }
-
-        http(
-            "POST",
-            api("/completeExperiments"),
-            {
-                version: 1,
-                appKey: state.appKey,
-                experiments: experimentsByKey
-            },
-            () => callThen(),
-            e => {
-                error("Failed to complete experiments", e);
-                callThen();
-            }
-        );
-    }, 10);
-}
+    );
+}, 10);
 
 function finishInit(outcomes: Outcomes): void {
     try {
