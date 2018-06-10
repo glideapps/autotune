@@ -110,16 +110,16 @@ export function startHTMLExperiments() {
 }
 
 function setupHTMLCompletions() {
-    const links = document.querySelectorAll("a[autotune],a[data-autotune]");
-    each(links, (link: HTMLAnchorElement) => {
-        const onclick = link.onclick;
-        link.onclick = event => {
+    const clickables = document.querySelectorAll("a[autotune],a[data-autotune],button[autotune],button[data-autotune]");
+    each(clickables, (clickable: HTMLAnchorElement | HTMLButtonElement) => {
+        const onclick = clickable.onclick;
+        clickable.onclick = event => {
             event.preventDefault();
             complete(() => {
                 if (onclick !== null) {
-                    onclick.bind(link)(event);
-                } else {
-                    window.location.href = link.href;
+                    onclick.bind(clickable)(event);
+                } else if (clickable instanceof HTMLAnchorElement) {
+                    window.location.href = clickable.href;
                 }
             });
         };
