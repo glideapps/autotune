@@ -8,6 +8,8 @@ import {
 
 import { startHTMLExperiments } from "./html";
 
+import { Convert, SerializedState } from "./common/models";
+
 import {
     http,
     uuidv4,
@@ -20,6 +22,8 @@ import {
     debounce
 } from "./util";
 
+const EXPERIMENT_PICKS_EXPIRE_AFTER = 24 /* hours */ * (60 * 60 * 1000) /* milliseconds/ hour */;
+
 function api(path: string) {
     return `https://2vyiuehl9j.execute-api.us-east-2.amazonaws.com/prod/${path}`;
 }
@@ -28,8 +32,14 @@ function outcomesUrl(appKey: string) {
     return `https://s3.us-east-2.amazonaws.com/js.autotune.xyz/${appKey}.json`;
 }
 
+const defaultSerializedState: SerializedState = {
+    lastInitialized: new Date().getTime(),
+    experimentPicks: {}
+};
+
 const state: {
     appKey: string;
+    serialized: SerializedState;
     experiments: { [name: string]: Experiment };
     defaultCompletions: { [name: string]: Experiment };
     queuedCompletedExperiments: { [name: string]: Experiment };
@@ -39,8 +49,18 @@ const state: {
     experiments: {},
     defaultCompletions: {},
     queuedCompletedExperiments: {},
-    queuedStartedExperiments: {}
+    queuedStartedExperiments: {},
+    serialized: defaultSerializedState
 };
+
+const serializeStateDebounced = debounce(() => {
+    log("Writing state", state.serialized);
+    try {
+        localStorage[storageKey("state")] = Convert.serializedStateToJson(state.serialized);
+    } catch (e) {
+        error("Could not save state:", e.message);
+    }
+}, 100);
 
 function startExperiment(theExperiment: Experiment): void {
     state.queuedStartedExperiments[theExperiment.name] = theExperiment;
@@ -139,8 +159,25 @@ export function initialize(appKey: string, then: () => void, outcomes: Outcomes 
     }
 
     log("Initialize", appKey);
-
     state.appKey = appKey;
+
+    try {
+        state.serialized = Convert.toSerializedState(localStorage[storageKey("state")]);
+    } catch (e) {
+        state.serialized = defaultSerializedState;
+    }
+
+    const now = new Date().getTime();
+    if (
+        state.serialized.lastInitialized !== undefined &&
+        now - state.serialized.lastInitialized > EXPERIMENT_PICKS_EXPIRE_AFTER
+    ) {
+        log("Expiring saved experiment picks because user hasn't been seen in a while");
+        state.serialized.experimentPicks = {};
+    }
+
+    state.serialized.lastInitialized = now;
+    serializeStateDebounced();
 
     if (outcomes !== undefined) {
         finishInit(outcomes);
@@ -175,37 +212,17 @@ function experiment(name: string): Experiment {
 function storageKey(path: string): string {
     return `autotune.v1.${state.appKey}.${path}`;
 }
-export class Experiment {
-    private static picks: { [name: string]: string } = {};
 
+export class Experiment {
     private static loadPick(name: string): string | undefined {
-        let pick = Experiment.picks[name];
-        if (pick === undefined) {
-            try {
-                const raw = localStorage[storageKey("picks")];
-                const savedPicks = raw === undefined ? {} : JSON.parse(raw);
-                Experiment.picks = { ...Experiment.picks, ...savedPicks };
-            } catch (e) {
-                error("Could not load saved experiment picks:", e.message);
-            }
-            pick = Experiment.picks[name];
-        }
-        return pick;
+        const pick = state.serialized.experimentPicks[name];
+        return pick === undefined ? undefined : pick.pick;
     }
 
     private static savePick(name: string, pick: string) {
-        Experiment.picks[name] = pick;
-        Experiment.persistPicks();
+        state.serialized.experimentPicks[name] = { pick, date: new Date().getTime() };
+        serializeStateDebounced();
     }
-
-    private static persistPicks = debounce(() => {
-        log("Writing saved experiment picks", Experiment.picks);
-        try {
-            localStorage[storageKey("picks")] = JSON.stringify(Experiment.picks);
-        } catch (e) {
-            error("Could not save experiment picks:", e.message);
-        }
-    }, 100);
 
     payoff: number;
     pick?: string;

@@ -1,6 +1,9 @@
 #!/bin/bash -e
 
-rm -rf dist
+rm -rf dist/*
+
+quicktype src/common/models.in.ts -o src/common/models.ts
+
 tsc -p tsconfig.json
 
 printf '%s\n%s\n' "#!/usr/bin/env node" "$(cat dist/cli/index.js)" > dist/cli/index.js
