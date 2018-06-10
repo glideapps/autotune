@@ -1,6 +1,13 @@
 export { debounce } from "./debounce";
 
-const DEBUG = true;
+const BROWSER = typeof window !== "undefined";
+
+const DEBUG = (() => {
+    if (BROWSER) {
+        return window.location.hostname === "localhost" || window.location.search.indexOf("autotune-debug") !== -1;
+    }
+    return false;
+})();
 
 // https://stackoverflow.com/a/2117523/80410
 export function uuidv4() {
