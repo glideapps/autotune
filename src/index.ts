@@ -22,7 +22,7 @@ import {
     debounce
 } from "./util";
 
-const EXPERIMENT_PICKS_EXPIRE_AFTER = 24 /* hours */ * (60 * 60 * 1000) /* milliseconds/ hour */;
+const SESSION_EXPIRES_AFTER = 24 /* hours */ * (60 * 60 * 1000) /* milliseconds/ hour */;
 
 function api(path: string) {
     return `https://2vyiuehl9j.execute-api.us-east-2.amazonaws.com/prod/${path}`;
@@ -33,8 +33,9 @@ function outcomesUrl(appKey: string) {
 }
 
 const defaultSerializedState: SerializedState = {
-    lastInitialized: new Date().getTime(),
-    experimentPicks: {}
+    lastInitialized: 0,
+    experimentPicks: {},
+    outcomes: {}
 };
 
 const state: {
@@ -136,6 +137,9 @@ const completeExperimentsDebounced = debounce((then: CompletionCallback | undefi
 }, 10);
 
 function finishInit(outcomes: Outcomes): void {
+    state.serialized.outcomes = outcomes;
+    serializeStateDebounced();
+
     try {
         Object.getOwnPropertyNames(outcomes).forEach(name => {
             // If there's already an experiment there, it's already running,
@@ -148,7 +152,7 @@ function finishInit(outcomes: Outcomes): void {
 
         startHTMLExperiments();
     } catch (e) {
-        error("Couldn not finish init", e);
+        error("Couldn't finish init", e);
     }
 }
 
@@ -168,11 +172,10 @@ export function initialize(appKey: string, then: () => void, outcomes: Outcomes 
     }
 
     const now = new Date().getTime();
-    if (
-        state.serialized.lastInitialized !== undefined &&
-        now - state.serialized.lastInitialized > EXPERIMENT_PICKS_EXPIRE_AFTER
-    ) {
-        log("Expiring saved experiment picks because user hasn't been seen in a while");
+    const beginNewSession = now - state.serialized.lastInitialized > SESSION_EXPIRES_AFTER;
+
+    if (beginNewSession) {
+        log("Starting a new session");
         state.serialized.experimentPicks = {};
     }
 
@@ -181,6 +184,11 @@ export function initialize(appKey: string, then: () => void, outcomes: Outcomes 
 
     if (outcomes !== undefined) {
         finishInit(outcomes);
+        return;
+    }
+
+    if (!beginNewSession) {
+        finishInit(state.serialized.outcomes);
         return;
     }
 
@@ -215,12 +223,11 @@ function storageKey(path: string): string {
 
 export class Experiment {
     private static loadPick(name: string): string | undefined {
-        const pick = state.serialized.experimentPicks[name];
-        return pick === undefined ? undefined : pick.pick;
+        return state.serialized.experimentPicks[name];
     }
 
     private static savePick(name: string, pick: string) {
-        state.serialized.experimentPicks[name] = { pick, date: new Date().getTime() };
+        state.serialized.experimentPicks[name] = pick;
         serializeStateDebounced();
     }
 
