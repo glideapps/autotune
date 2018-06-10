@@ -1,6 +1,6 @@
-# autotune
+# Autotune: automatically tune your apps to improve outcomes
 
-**Autotune automatically tunes your apps over time to improve outcomes.** Not sure what your main call-to-action should be, or what color to use for the button? Just make a few good guesses and Autotune will make the best decision.
+Not sure what your main call-to-action should be, or what color to use for the button? Just make a few good guesses and Autotune will make the best decision.
 
 ## Create an account and your first app
 
