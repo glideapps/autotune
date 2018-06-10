@@ -182,11 +182,11 @@ export class Experiment {
         let pick = Experiment.picks[name];
         if (pick === undefined) {
             try {
-                const savedPicks = localStorage[storageKey("picks")];
-                Experiment.picks = savedPicks === undefined ? {} : JSON.parse(savedPicks);
+                const raw = localStorage[storageKey("picks")];
+                const savedPicks = raw === undefined ? {} : JSON.parse(raw);
+                Experiment.picks = { ...Experiment.picks, ...savedPicks };
             } catch (e) {
                 error("Could not load saved experiment picks:", e.message);
-                Experiment.picks = {};
             }
             pick = Experiment.picks[name];
         }
@@ -199,7 +199,7 @@ export class Experiment {
     }
 
     private static persistPicks = debounce(() => {
-        log("Writing saved experiment picks");
+        log("Writing saved experiment picks", Experiment.picks);
         try {
             localStorage[storageKey("picks")] = JSON.stringify(Experiment.picks);
         } catch (e) {
