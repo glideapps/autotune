@@ -25,7 +25,7 @@ function api(path: string) {
 }
 
 function outcomesUrl(appKey: string) {
-    return `https://s3.us-east-2.amazonaws.com/autotune-outcomes/${appKey}.json`;
+    return `https://s3.us-east-2.amazonaws.com/js.autotune.xyz/${appKey}.json`;
 }
 
 const state: {
