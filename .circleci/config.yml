@@ -3,7 +3,7 @@ version: 2
 jobs:
   build:
     docker:
-      - image: circleci/node:7.10
+      - image: circleci/node:8.11.2
     steps:
       - checkout
       - restore_cache:
@@ -19,7 +19,7 @@ jobs:
       - run: npm run build
   deploy:
     docker:
-      - image: circleci/node:7.10
+      - image: circleci/node:8.11.2
     steps:
       - run: echo "//registry.npmjs.org/:_authToken=$NPM_TOKEN" >> ~/.npmrc
       - checkout
