@@ -2,7 +2,10 @@
 
 rm -rf dist/*
 
-quicktype src/common/models.in.ts -o src/common/models.ts
+# quicktype is not producing any top-level types in CircleCI for some reason
+if [ -z "$CI" ]; then
+    quicktype src/common/models.in.ts -o src/common/models.ts --telemetry enable
+fi
 
 tsc -p tsconfig.json
 
