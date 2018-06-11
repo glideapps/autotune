@@ -1,12 +1,9 @@
 version: 2
 
-defaults: &defaults
-  docker:
-    - image: circleci/node:8.11.2
-
 jobs:
   build:
-    <<: *defaults
+    docker:
+      - image: circleci/node:7.10
     steps:
       - checkout
       - restore_cache:
@@ -20,33 +17,22 @@ jobs:
             - node_modules
           key: v1-dependencies-{{ checksum "package.json" }}
       - run: npm run build
-      - persist_to_workspace:
-          root: dist
-          paths: [.]
-
   deploy:
-    <<: *defaults
+    docker:
+      - image: circleci/node:7.10
     steps:
-      - attach_workspace:
-          at: dist
       - run: echo "//registry.npmjs.org/:_authToken=$NPM_TOKEN" >> ~/.npmrc
+      - checkout
+      - run: npm install
+      - run: npm run build
       - run: npm run bump-version
       - run: npm publish
 
 workflows:
   version: 2
-  build:
-    jobs:
-      - build:
-          filters:
-            branches:
-              ignore: master
-
   build-and-deploy:
     jobs:
       - deploy:
-          requires:
-            - build
           filters:
             branches:
-              only: fix-quicktype
+              only: master
