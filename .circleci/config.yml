@@ -27,7 +27,7 @@ jobs:
       - run: npm run build
       - run: npm run bump-version
       - run: npm publish
-      - run: npm install -g appcenter && appcenter build queue --app quicktype/quicktype.io --branch master --token $APPCENTER_TOKEN
+      - run: npm install appcenter && node_modules/.bin/appcenter build queue --app quicktype/quicktype.io --branch master --token $APPCENTER_TOKEN
 
 workflows:
   version: 2
