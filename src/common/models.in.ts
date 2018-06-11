@@ -5,7 +5,6 @@ export type SerializedState = {
     /** @TJS-type integer */
     lastInitialized: number;
     experimentPicks: { [experiment: string]: string };
-    outcomes: Outcomes;
 };
 
 // Unfortunately this is duplicated from ClientAPI until

@@ -34,8 +34,7 @@ function outcomesUrl(appKey: string) {
 
 const defaultSerializedState: SerializedState = {
     lastInitialized: 0,
-    experimentPicks: {},
-    outcomes: {}
+    experimentPicks: {}
 };
 
 const state: {
@@ -137,9 +136,6 @@ const completeExperimentsDebounced = debounce((then: CompletionCallback | undefi
 }, 10);
 
 function finishInit(outcomes: Outcomes): void {
-    state.serialized.outcomes = outcomes;
-    serializeStateDebounced();
-
     try {
         Object.getOwnPropertyNames(outcomes).forEach(name => {
             // If there's already an experiment there, it's already running,
@@ -184,11 +180,6 @@ export function initialize(appKey: string, then: () => void, outcomes: Outcomes 
 
     if (outcomes !== undefined) {
         finishInit(outcomes);
-        return;
-    }
-
-    if (!beginNewSession) {
-        finishInit(state.serialized.outcomes);
         return;
     }
 
