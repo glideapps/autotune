@@ -11,12 +11,6 @@
 export interface SerializedState {
     experimentPicks: { [key: string]: string };
     lastInitialized: number;
-    outcomes:        { [key: string]: Outcome };
-}
-
-export interface Outcome {
-    bestOption: string;
-    epsilon:    number;
 }
 
 export interface Outcomes {
@@ -124,11 +118,6 @@ export namespace Convert {
         "SerializedState": o({
             experimentPicks: m(""),
             lastInitialized: 0,
-            outcomes: m(r("Outcome")),
-        }, "any"),
-        "Outcome": o({
-            bestOption: "",
-            epsilon: 3.14,
         }, "any"),
         "Outcomes": o({
             bestOption: "",
