@@ -26,19 +26,19 @@ Once you've created an app, add a `<script>` tag in your page's `<head>` section
 Next, create an experiment anywhere on your page:
 
 ```html
-<!-- Shorthand syntax: -->
+<!-- Shorthand syntax -->
 <autotune>
     <h1>The glass is half full</h1>
     <h1>The glass is half empty</h1>
 </autotune>
 
-<!-- More explicitly:-->
+<!-- Same but more explicit -->
 <autotune experiment="Main title">
     <h1 option="half full">The glass is half full</h1>
     <h1 option="half empty">The glass is half empty</h1>
 </autotune>
 
-<!-- Without custom tags (most compatible):-->
+<!-- Without custom tags (most compatible) -->
 <h1 data-experiment="Main title" data-option="half full">The glass is half full</h1>
 <h1 data-experiment="Main title" data-option="half empty">The glass is half empty</h1>
 ```
@@ -46,10 +46,10 @@ Next, create an experiment anywhere on your page:
 Finally, add the `autotune` attribute to links you want users to click:
 
 ```html
-<!-- Shorthand syntax: -->
+<!-- Shorthand syntax -->
 <a href="/buy-now" autotune>Buy now</a>
 
-<!-- Using standard custom attribute:-->
+<!-- Using standard custom attribute -->
 <a href="/buy-now" data-autotune>Buy now</a>
 ```
 
