@@ -264,7 +264,12 @@ export class Experiment {
             return this.setValueAndStartExperiment(savedPick, savedPick === this.bestOption);
         }
 
-        const pickRandom = this.bestOption === undefined || Math.random() < this.epsilon;
+        const pickRandom =
+            this.bestOption === undefined ||
+            // The best option may have been removed from the option set
+            this.options.indexOf(this.bestOption) === -1 ||
+            Math.random() < this.epsilon;
+
         let pick: string;
         if (pickRandom) {
             pick = options[Math.floor(Math.random() * options.length)];
