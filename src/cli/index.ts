@@ -267,6 +267,17 @@ async function queryGraphQL<T>(
     return result.data[queryName] as T;
 }
 
+async function getApp(keyOrName: string): Promise<Application | null> {
+    let app = await queryGraphQL<Application | null>(graphQLQueryApplication, "getApplication", { key: keyOrName });
+    if (app !== null) return app;
+
+    const user = await queryGraphQL<User>(graphQLQueryAll, "viewer");
+    app = user.applications.find(a => a.name === keyOrName);
+    if (app !== undefined) return app;
+
+    return null;
+}
+
 async function listApps(_args: yargs.Arguments): Promise<void> {
     const user = await queryGraphQL<User>(graphQLQueryAll, "viewer");
     for (const app of user.applications) {
@@ -275,7 +286,7 @@ async function listApps(_args: yargs.Arguments): Promise<void> {
 }
 
 async function cmdListExperiments(_args: yargs.Arguments, appKey: string): Promise<void> {
-    const app = await queryGraphQL<Application | null>(graphQLQueryApplication, "getApplication", { key: appKey });
+    const app = await getApp(appKey);
     if (app === null) {
         throw new Error("Application not found");
     }
@@ -337,7 +348,7 @@ async function main(): Promise<void> {
         )
         .command("apps", "List all your apps", {}, args => cmd(listApps(args)))
         .command(
-            "experiments <appKey>",
+            "experiments <appKey | name>",
             "Show experiments in app",
             ya => ya.positional("appKey", { type: "string" }),
             args => cmd(cmdListExperiments(args, args.appKey))
