@@ -1,5 +1,11 @@
 # Autotune: automatically tune your apps to improve outcomes
 
+A/B testing is critical to optimizing any app, but implementing tests and analyzing results can be awkward and time-consuming.
+
+As developers, we want adding A/B tests to any app to be as simple as adding a line of code. We also want machine learning algorithms to analyze our test results and optimize our app for us, automatically, without having to think twice.
+
+This is why we created Autotune. With Autotune, you create special variables in your program that Autotune will automatically tune over time to improve outcomes.
+
 Not sure what your main call-to-action should be, or what color to use for the button? Just make a few good guesses and Autotune will make the best decision.
 
 ## Create an account and your first app
