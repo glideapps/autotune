@@ -7,12 +7,18 @@ import * as storage from "node-persist";
 import { CognitoIdentityServiceProvider } from "aws-sdk";
 import { decode } from "jsonwebtoken";
 
-import { CreateAppKeyRequest, CreateAppKeyResponse } from "../common/ClientAPI";
+import { CreateAppKeyRequest, CreateAppKeyResponse, clientUrl } from "../common/ClientAPI";
 import { User, Application } from "./Query";
+
+import chalk from "chalk";
+import { table } from "table";
 
 const cognitoAccessKeyID = "AKIAI2GRN6DCKCABTKGQ";
 const cognitoSecretAccessKey = "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";
 const clientID = "104m4anpa00b724preu1dco9vj";
+
+const dimBlue = (x: string) => dim(blue(x));
+const { red, yellow, blue, magenta, cyan, green, dim, bold } = chalk;
 
 const cognito = new CognitoIdentityServiceProvider({
     region: "us-east-2",
@@ -96,7 +102,7 @@ async function createDemoApp() {
     console.log("");
     console.log("We've created a sample app for you to start with! Add this script tag:");
     console.log("");
-    console.log(`  <script src="https://s3.us-east-2.amazonaws.com/js.autotune.xyz/${appKey}.js"></script>`);
+    console.log(`  <script src="${clientUrl(appKey)}"></script>`);
     console.log("");
     console.log("Then create an experiment:");
     console.log("");
@@ -240,7 +246,24 @@ async function createApp(name: string): Promise<string> {
 
 async function cmdCreateApp(_args: yargs.Arguments, name: string): Promise<void> {
     const appKey = await createApp(name);
-    console.log(`App key: ${appKey}`);
+    console.log(`✅  Created app '${magenta(name)}' with key ${bold(appKey)}`);
+    console.log();
+    console.log("Add this code to your web page:");
+    console.log();
+
+    console.log(
+        [
+            dimBlue("<"),
+            blue("script"),
+            " ",
+            yellow("src"),
+            dimBlue("="),
+            red(`"${clientUrl(appKey)}"`),
+            dimBlue("></"),
+            blue("script"),
+            dimBlue(">")
+        ].join("")
+    );
 }
 
 const graphQLQueryAll =
@@ -280,10 +303,31 @@ async function getApp(keyOrName: string): Promise<Application | null> {
 
 async function listApps(_args: yargs.Arguments): Promise<void> {
     const user = await queryGraphQL<User>(graphQLQueryAll, "viewer");
-    for (const app of user.applications) {
-        console.log(`${app.key}  ${app.name}`);
-    }
+    const apps = user.applications
+        .sort((a, b) => a.name.localeCompare(b.name))
+        .map(app => [magenta(app.name), app.key]);
+    const header = [bold("App Name"), bold("Key")];
+    const rows = [header, ...apps];
+    console.log(table(rows));
 }
+
+const epsilonThresholds = [
+    {
+        max: 0.5,
+        color: green,
+        means: "autotune has determined the best option with high confidence"
+    },
+    {
+        max: 0.8,
+        color: yellow,
+        means: "autotune is learning and choices are improving"
+    },
+    {
+        max: Infinity,
+        color: red,
+        means: "autotune has little data and choices are mostly random"
+    }
+];
 
 async function cmdListExperiments(_args: yargs.Arguments, appKey: string): Promise<void> {
     const app = await getApp(appKey);
@@ -291,17 +335,32 @@ async function cmdListExperiments(_args: yargs.Arguments, appKey: string): Promi
         throw new Error("Application not found");
     }
     for (const experiment of app.experiments) {
-        console.log(`${experiment.name} since ${experiment.started} epsilon ${experiment.epsilon}:`);
+        const rows: any[] = [];
 
-        const options: { name: string; completed: number; result: number }[] = [];
-        for (const option of experiment.options) {
-            const average = option.payoff / option.completed;
-            options.push({ name: option.name, completed: option.completed, result: average });
-        }
-        options.sort((a, b) => b.result - a.result);
+        const epsilonRounded = Math.floor(experiment.epsilon * 100) / 100;
+        const epsilon = epsilonThresholds.find(e => epsilonRounded <= e.max);
+        const epsilonDisplay = epsilon.color(`epsilon = ${epsilonRounded}`);
+        rows.push([bold(magenta(experiment.name)), `Since ${experiment.started}`, "Conversion"]);
+
+        const options = experiment.options
+            .map(o => ({
+                ...o,
+                result: o.payoff / o.completed
+            }))
+            .sort((a, b) => b.result - a.result);
+
+        let first = true;
         for (const o of options) {
-            console.log(`    ${o.name}: ${Math.floor(o.result * 1000) / 10}% over ${o.completed} instances`);
+            const conversionRate = (Math.floor(o.result * 1000) / 10).toString();
+            const conversion = first ? bold(conversionRate) : conversionRate;
+            const star = yellow("★");
+            const name = first ? bold(o.name + " " + star) : o.name;
+            rows.push([name, dim(`${o.completed} instances`), `${conversion}%`]);
+            first = false;
         }
+
+        rows.push([epsilonDisplay, dim(epsilon.means), ""]);
+        console.log(table(rows));
     }
 }
 
@@ -321,35 +380,35 @@ async function main(): Promise<void> {
     }
 
     const argv = yargs
-        .usage("Usage: $0 <command> [options]")
+        .usage(`Usage: ${cyan("$0")} <command> ${dim("[options]")}`)
         .command(
             "create-account <email> <password>",
-            "Create a new account",
+            dim("Create a new account"),
             ya => ya.positional("email", { type: "string" }).positional("password", { type: "string" }),
             args => cmd(cmdSignup(args, args.email, args.password))
         )
         .command(
             "confirm <code>",
-            "Confirm a new account",
+            dim("Confirm a new account"),
             ya => ya.positional("email", { type: "string" }).positional("code", { type: "string" }),
             args => cmd(cmdConfirm(args, args.email, args.code))
         )
         .command(
             "login <email> <password>",
-            "Login",
+            dim("Login"),
             ya => ya.positional("email", { type: "string" }).positional("password", { type: "string" }),
             args => cmd(cmdLogin(args, args.email, args.password))
         )
         .command(
             "create-app <name>",
-            "Create a new app",
+            dim("Create a new app"),
             ya => ya.positional("name", { type: "string" }),
             args => cmd(cmdCreateApp(args, args.name))
         )
-        .command("apps", "List all your apps", {}, args => cmd(listApps(args)))
+        .command("apps", dim("List your apps"), {}, args => cmd(listApps(args)))
         .command(
             "experiments <appKey | name>",
-            "Show experiments in app",
+            dim("Show experiments for an app"),
             ya => ya.positional("appKey", { type: "string" }),
             args => cmd(cmdListExperiments(args, args.appKey))
         )

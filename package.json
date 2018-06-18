@@ -29,10 +29,12 @@
     "homepage": "https://github.com/quicktype/autotune#readme",
     "dependencies": {
         "aws-sdk": "^2.247.1",
+        "chalk": "^2.4.1",
         "jsonwebtoken": "^8.2.2",
         "node-persist": "^3.0.1",
         "request": "^2.87.0",
         "request-promise": "^4.2.2",
+        "table": "^4.0.3",
         "yargs": "^11.0.0"
     },
     "devDependencies": {
@@ -41,6 +43,7 @@
         "@types/node-persist": "0.0.33",
         "@types/request-promise": "^4.1.41",
         "@types/shelljs": "^0.8.0",
+        "@types/table": "^4.0.5",
         "@types/yargs": "^11.0.0",
         "browserify": "^16.2.2",
         "compare-versions": "^3.2.1",
