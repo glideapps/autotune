@@ -11,7 +11,7 @@ import { CreateAppKeyRequest, CreateAppKeyResponse, clientUrl } from "../common/
 import { User, Application } from "./Query";
 
 import chalk from "chalk";
-import { table } from "table";
+import { table, getBorderCharacters } from "table";
 
 const cognitoAccessKeyID = "AKIAI2GRN6DCKCABTKGQ";
 const cognitoSecretAccessKey = "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";
@@ -306,9 +306,7 @@ async function listApps(_args: yargs.Arguments): Promise<void> {
     const apps = user.applications
         .sort((a, b) => a.name.localeCompare(b.name))
         .map(app => [magenta(app.name), app.key]);
-    const header = [bold("App Name"), bold("Key")];
-    const rows = [header, ...apps];
-    console.log(table(rows));
+    logTable([[bold("App Name"), bold("Key")], ...apps]);
 }
 
 const epsilonThresholds = [
@@ -360,7 +358,7 @@ async function cmdListExperiments(_args: yargs.Arguments, appKey: string): Promi
         }
 
         rows.push([epsilonDisplay, dim(epsilon.means), ""]);
-        console.log(table(rows));
+        logTable(rows);
     }
 }
 
@@ -427,4 +425,11 @@ async function main(): Promise<void> {
     }
 }
 
+function logTable(rows: any[], style: "void" | "norc" = "norc") {
+    console.log(
+        table(rows, {
+            border: getBorderCharacters(style)
+        })
+    );
+}
 main();
