@@ -1,10 +1,4 @@
-import {
-    ClientConfig,
-    Outcomes,
-    CompleteExperimentsRequest,
-    StartExperimentsRequest,
-    StartExperimentsResponse
-} from "./common/ClientAPI";
+import { ClientConfig, Outcomes, CompleteExperimentsRequest, outcomesUrl } from "./common/ClientAPI";
 
 import { startHTMLExperiments } from "./html";
 
@@ -26,10 +20,6 @@ const SESSION_EXPIRES_AFTER = 24 /* hours */ * (60 * 60 * 1000) /* milliseconds/
 
 function api(path: string) {
     return `https://2vyiuehl9j.execute-api.us-east-2.amazonaws.com/prod/${path}`;
-}
-
-function outcomesUrl(appKey: string) {
-    return `https://s3.us-east-2.amazonaws.com/js.autotune.xyz/${appKey}.json`;
 }
 
 const defaultSerializedState: SerializedState = {

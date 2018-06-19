@@ -83,3 +83,15 @@ export type CreateAppKeyRequest = {
 export type CreateAppKeyResponse = {
     appKey: string;
 };
+
+export function s3Url(path: string) {
+    return `https://s3.us-east-2.amazonaws.com/js.autotune.xyz/${path}`;
+}
+
+export function outcomesUrl(appKey: string) {
+    return s3Url(`${appKey}.json`);
+}
+
+export function clientUrl(appKey: string) {
+    return s3Url(`${appKey}.js`);
+}
