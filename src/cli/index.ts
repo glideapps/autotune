@@ -13,6 +13,8 @@ import { User, Application } from "./Query";
 import chalk from "chalk";
 import { table, getBorderCharacters } from "table";
 
+import * as moment from "moment";
+
 const cognitoAccessKeyID = "AKIAI2GRN6DCKCABTKGQ";
 const cognitoSecretAccessKey = "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";
 const clientID = "104m4anpa00b724preu1dco9vj";
@@ -338,7 +340,8 @@ async function cmdListExperiments(_args: yargs.Arguments, appKey: string): Promi
         const epsilonRounded = Math.floor(experiment.epsilon * 100) / 100;
         const epsilon = epsilonThresholds.find(e => epsilonRounded <= e.max);
         const epsilonDisplay = epsilon.color(`epsilon = ${epsilonRounded}`);
-        rows.push([bold(magenta(experiment.name)), `Since ${experiment.started}`, "Conversion"]);
+        const ago = moment(experiment.started).fromNow();
+        rows.push([bold(magenta(experiment.name)), `Since ${ago}`, "Conversion"]);
 
         const options = experiment.options
             .map(o => ({
