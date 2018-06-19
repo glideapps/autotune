@@ -293,12 +293,18 @@ async function queryGraphQL<T>(
 }
 
 async function getApp(keyOrName: string): Promise<Application | null> {
-    let app = await queryGraphQL<Application | null>(graphQLQueryApplication, "getApplication", { key: keyOrName });
-    if (app !== null) return app;
+    const isUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(keyOrName);
 
-    const user = await queryGraphQL<User>(graphQLQueryAll, "viewer");
-    app = user.applications.find(a => a.name === keyOrName);
-    if (app !== undefined) return app;
+    if (isUUID) {
+        const app = await queryGraphQL<Application | null>(graphQLQueryApplication, "getApplication", {
+            key: keyOrName
+        });
+        if (app !== null) return app;
+    } else {
+        const user = await queryGraphQL<User>(graphQLQueryAll, "viewer");
+        const app = user.applications.find(a => a.name === keyOrName);
+        if (app !== undefined) return app;
+    }
 
     return null;
 }
