@@ -248,7 +248,7 @@ async function createApp(name: string): Promise<string> {
 
 async function cmdCreateApp(_args: yargs.Arguments, name: string): Promise<void> {
     const appKey = await createApp(name);
-    console.log(`✅  Created app '${magenta(name)}' with key ${bold(appKey)}`);
+    console.log(`✓ Created app '${magenta(name)}' with key ${bold(appKey)}`);
     console.log();
     console.log("Add this code to your web page:");
     console.log();
