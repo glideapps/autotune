@@ -1,3 +1,5 @@
+// tslint:disable strict-boolean-expressions
+
 import { oneOf, complete } from ".";
 import { map, each, hash } from "./util";
 

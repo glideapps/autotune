@@ -6,6 +6,7 @@ quicktype --telemetry enable
 quicktype src/common/models.in.ts -o src/common/models.ts
 quicktype --src-lang schema -o src/common/ClientConfig.ts src/common/ClientConfig.schema
 
+npm run tslint
 tsc -p tsconfig.json
 
 printf '%s\n%s\n' "#!/usr/bin/env node" "$(cat dist/cli/index.js)" > dist/cli/index.js

@@ -435,4 +435,5 @@ function logTable(rows: any[], style: "void" | "norc" = "norc") {
         })
     );
 }
-main();
+
+main().catch(e => console.error(e));
