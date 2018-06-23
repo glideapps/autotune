@@ -14,7 +14,6 @@ import chalk from "chalk";
 import { table, getBorderCharacters } from "table";
 
 import * as moment from "moment";
-import { uuidv4 } from "../util";
 
 const cognitoAccessKeyID = "AKIAI2GRN6DCKCABTKGQ";
 const cognitoSecretAccessKey = "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";
