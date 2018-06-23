@@ -5,25 +5,29 @@ import { startHTMLExperiments } from "./html";
 
 import { Convert, SerializedState } from "./common/models";
 
-import {
-    http,
-    uuidv4,
-    log,
-    error,
-    mapObject,
-    getOwnPropertyValues,
-    getLocalLanguage,
-    getTimeZoneOffset,
-    debounce
-} from "./util";
+import { Environment } from "./Environment";
+import { BrowserEnvironment } from "./BrowserEnvironment";
+
+import { uuidv4, mapObject, getOwnPropertyValues } from "./util";
+import { debounce } from "./debounce";
+
+export let environment: Environment = new BrowserEnvironment();
+
+function log(...args: any[]): void {
+    environment.log(...args);
+}
+
+function error(...args: any[]): void {
+    environment.error(...args);
+}
 
 export type Outcomes = { [experimentKey: string]: Outcome };
 
 let clientContext: ClientContext | undefined;
 function getClientContext(): ClientContext {
     if (clientContext === undefined) {
-        clientContext = { tzo: getTimeZoneOffset() };
-        const lang = getLocalLanguage();
+        clientContext = { tzo: environment.getTimeZoneOffset() };
+        const lang = environment.getLocalLanguage();
         if (lang !== undefined) {
             clientContext.lang = lang;
         }
@@ -71,7 +75,7 @@ const state: {
 const serializeStateDebounced = debounce(() => {
     log("Writing state", state.serialized);
     try {
-        localStorage[storageKey("state")] = Convert.serializedStateToJson(state.serialized);
+        environment.setLocalStorage(storageKey("state"), Convert.serializedStateToJson(state.serialized));
     } catch (e) {
         error("Could not save state:", e.message);
     }
@@ -94,7 +98,7 @@ const startExperimentsDebounced = debounce(() => {
 
     state.queuedStartedExperiments = {};
 
-    http(
+    environment.http(
         "POST",
         api("/startExperiments"),
         {
@@ -135,7 +139,7 @@ const completeExperimentsDebounced = debounce((then: CompletionCallback | undefi
         }
     }
 
-    http(
+    environment.http(
         "POST",
         api("/completeExperiments"),
         {
@@ -222,11 +226,13 @@ export function initialize(appKey: string, then: () => void, outcomes?: Outcomes
     log("Initialize", appKey);
     state.appKey = appKey;
 
+    state.serialized = defaultSerializedState;
     try {
-        state.serialized = Convert.toSerializedState(localStorage[storageKey("state")]);
-    } catch (e) {
-        state.serialized = defaultSerializedState;
-    }
+        const stateString = environment.getLocalStorage(storageKey("state"));
+        if (stateString !== undefined) {
+            state.serialized = Convert.toSerializedState(stateString);
+        }
+    } catch {}
 
     const now = new Date().getTime();
     const beginNewSession = now - state.serialized.lastInitialized > SESSION_EXPIRES_AFTER;
@@ -244,7 +250,7 @@ export function initialize(appKey: string, then: () => void, outcomes?: Outcomes
         return;
     }
 
-    http(
+    environment.http(
         "GET",
         outcomesUrl(appKey),
         undefined,
