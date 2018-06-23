@@ -4,6 +4,7 @@ rm -rf dist/*
 
 quicktype --telemetry enable
 quicktype src/common/models.in.ts -o src/common/models.ts
+quicktype --src-lang schema -o src/common/ClientConfig.ts src/common/ClientConfig.schema
 
 tsc -p tsconfig.json
 

@@ -1,0 +1,78 @@
+{
+    "$schema": "http://json-schema.org/draft-04/schema",
+    "$ref": "#/definitions/clientConfig",
+    "definitions": {
+        "clientConfig": {
+            "type": "object",
+            "properties": {
+                "appKey": {
+                    "type": "string"
+                },
+                "outcomes": {
+                    "$ref": "#/definitions/experiments"
+                }
+            },
+            "required": ["appKey", "outcomes"]
+        },
+        "experiments": {
+            "type": "object",
+            "additionalProperties": {
+                "$ref": "#/definitions/experiment"
+            }
+        },
+        "experiment": {
+            "type": "object",
+            "properties": {
+                "options": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "tree": {
+                    "$ref": "#/definitions/tree"
+                }
+            },
+            "required": ["options", "tree"]
+        },
+        "tree": {
+            "oneOf": [
+                {
+                    "type": "object",
+                    "properties": {
+                        "best": {
+                            "type": "integer"
+                        },
+                        "eps": {
+                            "type": "number"
+                        }
+                    },
+                    "required": ["best", "eps"]
+                },
+                {
+                    "type": "object",
+                    "properties": {
+                        "at": {
+                            "type": "string"
+                        },
+                        "op": {
+                            "type": "string",
+                            "enum": ["eq", "lt"]
+                        },
+                        "v": {
+                            "oneOf": [{ "type": "string" }, { "type": "number" }],
+                            "title": "AttributeValue"
+                        },
+                        "l": {
+                            "$ref": "#/definitions/tree"
+                        },
+                        "r": {
+                            "$ref": "#/definitions/tree"
+                        }
+                    },
+                    "required": ["at", "op", "v", "l", "r"]
+                }
+            ]
+        }
+    }
+}

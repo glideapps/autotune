@@ -6,15 +6,3 @@ export type SerializedState = {
     lastInitialized: number;
     experimentPicks: { [experiment: string]: string };
 };
-
-// Unfortunately this is duplicated from ClientAPI until
-// quicktype can make this work:
-//
-//  import { Outcomes } from "./ClientAPI";
-//
-export type Outcomes = {
-    [experimentName: string]: {
-        epsilon: number;
-        bestOption: string;
-    };
-};

@@ -1,4 +1,5 @@
-import { ClientConfig, Outcomes, CompleteExperimentsRequest, outcomesUrl } from "./common/ClientAPI";
+import { CompleteExperimentsRequest, outcomesUrl, ClientContext } from "./common/ClientAPI";
+import { ClientConfig, Outcome, Tree } from "./common/ClientConfig";
 
 import { startHTMLExperiments } from "./html";
 
@@ -15,6 +16,20 @@ import {
     getTimeZoneOffset,
     debounce
 } from "./util";
+
+export type Outcomes = { [experimentKey: string]: Outcome };
+
+let clientContext: ClientContext | undefined;
+function getClientContext(): ClientContext {
+    if (clientContext === undefined) {
+        clientContext = { tzo: getTimeZoneOffset() };
+        const lang = getLocalLanguage();
+        if (lang !== undefined) {
+            clientContext.lang = lang;
+        }
+    }
+    return clientContext;
+}
 
 const SESSION_EXPIRES_AFTER = 24 /* hours */ * (60 * 60 * 1000) /* milliseconds/ hour */;
 
@@ -76,10 +91,7 @@ const startExperimentsDebounced = debounce(() => {
             version: 2,
             appKey: state.appKey,
             experiments,
-            ctx: {
-                lang: getLocalLanguage(),
-                tzo: getTimeZoneOffset()
-            }
+            ctx: getClientContext()
         },
         () => {
             return;
@@ -129,6 +141,51 @@ const completeExperimentsDebounced = debounce((then: CompletionCallback | undefi
     );
 }, 10);
 
+type BestOption = {
+    option?: string;
+    epsilon?: number;
+};
+
+function lookupBestOption(outcome: Outcome | undefined): BestOption {
+    if (outcome === undefined) {
+        return {};
+    }
+    const options = outcome.options;
+
+    const ctx = getClientContext();
+
+    function find(t: Tree): BestOption {
+        if (t.best !== undefined) {
+            return { option: options[t.best], epsilon: t.eps };
+        }
+        if (t.at === undefined || t.op === undefined || t.v === undefined) {
+            return {};
+        }
+        let ctxV = ctx[t.at];
+        if (typeof t.v === "string") {
+            if (typeof ctxV !== "string") ctxV = "null";
+        } else {
+            if (typeof ctxV !== "number") ctxV = 0;
+        }
+        let result: boolean;
+        switch (t.op) {
+            case "lt":
+                result = ctxV < t.v;
+                break;
+            case "eq":
+                result = ctxV === t.v;
+                break;
+            default:
+                return {};
+        }
+        const branch = result ? t.l : t.r;
+        if (branch === undefined) return {};
+        return find(branch);
+    }
+
+    return find(outcome.tree);
+}
+
 function finishInit(outcomes: Outcomes): void {
     try {
         Object.getOwnPropertyNames(outcomes).forEach(name => {
@@ -136,8 +193,8 @@ function finishInit(outcomes: Outcomes): void {
             // so don't overwrite it.
             if (state.experiments[name] !== undefined) return;
 
-            const { bestOption, epsilon } = outcomes[name];
-            state.experiments[name] = new Experiment(name, bestOption, epsilon);
+            const { option, epsilon } = lookupBestOption(outcomes[name]);
+            state.experiments[name] = new Experiment(name, option, epsilon);
         });
 
         startHTMLExperiments();

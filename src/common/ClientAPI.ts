@@ -1,18 +1,3 @@
-// GET to https://s3.us-east-2.amazonaws.com/autotune-outcomes/$APP_KEY.json
-export type Outcomes = {
-    [experimentName: string]: {
-        epsilon: number;
-        bestOption: string;
-    };
-};
-
-// The full clients, including the config, are generated at
-// GET to https://s3.us-east-2.amazonaws.com/js.autotune.xyz/$APP_KEY.json
-export type ClientConfig = {
-    appKey: string;
-    outcomes: Outcomes;
-};
-
 export type ClientContext = { [key: string]: string | number };
 
 // POST to https://2vyiuehl9j.execute-api.us-east-2.amazonaws.com/prod/startExperiments
@@ -89,9 +74,9 @@ export function s3Url(path: string) {
 }
 
 export function outcomesUrl(appKey: string) {
-    return s3Url(`${appKey}.json`);
+    return s3Url(`${appKey}.tree.json`);
 }
 
 export function clientUrl(appKey: string) {
-    return s3Url(`${appKey}.js`);
+    return s3Url(`${appKey}.tree.js`);
 }
