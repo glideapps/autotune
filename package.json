@@ -22,7 +22,10 @@
         "url": "git+ssh://git@github.com/quicktype/autotune.git"
     },
     "author": "typeguard, Inc.",
-    "bin": "dist/cli/index.js",
+    "bin": {
+        "tune": "dist/cli/index.js",
+        "autotune": "dist/cli/index.js"
+    },
     "bugs": {
         "url": "https://github.com/quicktype/autotune/issues"
     },
