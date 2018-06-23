@@ -69,6 +69,8 @@ function getAttributeExperiments(): AttributeExperiments {
         const name = node.getAttribute("data-experiment");
         const option = node.getAttribute("data-option");
 
+        if (name === null || option === null) return;
+
         let data = experiments[name];
         if (data === undefined) {
             data = experiments[name] = { options: [], nodes: [] };
@@ -117,13 +119,15 @@ export function startHTMLExperiments() {
 }
 
 function setupHTMLCompletions() {
-    const clickables = document.querySelectorAll("a[autotune],a[data-autotune],button[autotune],button[data-autotune]");
-    each(clickables, (clickable: HTMLAnchorElement | HTMLButtonElement) => {
+    const clickables: NodeListOf<HTMLAnchorElement | HTMLButtonElement> = document.querySelectorAll(
+        "a[autotune],a[data-autotune],button[autotune],button[data-autotune]"
+    );
+    each(clickables, clickable => {
         const onclick = clickable.onclick;
         clickable.onclick = event => {
             event.preventDefault();
             complete(() => {
-                if (onclick !== null) {
+                if (typeof onclick === "function") {
                     onclick.bind(clickable)(event);
                 } else if (clickable instanceof HTMLAnchorElement) {
                     window.location.href = clickable.href;

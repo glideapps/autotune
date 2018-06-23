@@ -333,7 +333,7 @@ async function cmdListExperiments(_args: yargs.Arguments, appKey: string): Promi
         const rows: any[] = [];
 
         const epsilonRounded = Math.floor(experiment.epsilon * 100) / 100;
-        const epsilon = epsilonThresholds.find(e => epsilonRounded <= e.max);
+        const epsilon = epsilonThresholds.find(e => epsilonRounded <= e.max)!;
         const epsilonDisplay = epsilon.color(`epsilon = ${epsilonRounded}`);
         const ago = moment(experiment.started).fromNow();
         rows.push([bold(magenta(experiment.name)), `Since ${ago}`, "Conversion"]);

@@ -99,7 +99,11 @@ const completeExperimentsDebounced = debounce((then: CompletionCallback | undefi
     state.queuedCompletedExperiments = {};
 
     const experimentsByKey: CompleteExperimentsRequest["experiments"] = {};
-    experiments.forEach(e => (experimentsByKey[e.key] = { pick: e.pick, payoff: e.payoff }));
+    for (const e of experiments) {
+        if (e.pick !== undefined && e.payoff !== undefined) {
+            experimentsByKey[e.key] = { pick: e.pick, payoff: e.payoff };
+        }
+    }
 
     log("Completing experiments", experimentsByKey);
 
@@ -142,7 +146,7 @@ function finishInit(outcomes: Outcomes): void {
     }
 }
 
-export function initialize(appKey: string, then: () => void, outcomes: Outcomes = undefined): void {
+export function initialize(appKey: string, then: () => void, outcomes?: Outcomes): void {
     if (state.appKey !== "") {
         log("Initialized more than once");
         return;
@@ -212,10 +216,10 @@ export class Experiment {
         serializeStateDebounced();
     }
 
-    payoff: number;
+    payoff?: number;
     pick?: string;
     pickedBest?: boolean;
-    options: string[];
+    options?: string[];
 
     readonly key: string;
 
@@ -261,7 +265,7 @@ export class Experiment {
             Math.random() < this.epsilon;
 
         let pick: string;
-        if (pickRandom) {
+        if (pickRandom || this.bestOption === undefined) {
             pick = options[Math.floor(Math.random() * options.length)];
         } else {
             pick = this.bestOption;
