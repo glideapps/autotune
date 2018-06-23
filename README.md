@@ -12,8 +12,8 @@ Not sure what your main call-to-action should be, or what color to use for the b
 
 ```shell
 $ npm install -g autotune
-$ autotune create-account <email> <password> # Autotune will email you a confirmation code
-$ autotune confirm <code>                    # Autotune will give you a code sample
+$ tune signup <email> <password> # Autotune will email you a confirmation code
+$ tune confirm <code>            # Autotune will give you a code sample
 ```
 
 ## Examples

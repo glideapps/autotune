@@ -14,6 +14,7 @@ import chalk from "chalk";
 import { table, getBorderCharacters } from "table";
 
 import * as moment from "moment";
+import { uuidv4 } from "../util";
 
 const cognitoAccessKeyID = "AKIAI2GRN6DCKCABTKGQ";
 const cognitoSecretAccessKey = "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";
@@ -58,7 +59,7 @@ async function getUserInfo(): Promise<UserInfo> {
     const userInfo = await tryGetUserInfo();
     if (userInfo === undefined) {
         console.error('You\'re not logged in :-(.  Please use "login" to log in');
-        console.error('or "create-account" to sign up, if you haven\'t done so already.');
+        console.error('or "signup" to sign up, if you haven\'t done so already.');
         return process.exit(1);
     }
     return userInfo;
@@ -389,7 +390,7 @@ async function main(): Promise<void> {
     const argv = yargs
         .usage(`Usage: ${cyan("$0")} <command> ${dim("[options]")}`)
         .command(
-            "create-account <email> <password>",
+            "signup <email> <password>",
             dim("Create a new account"),
             ya => ya.positional("email", { type: "string" }).positional("password", { type: "string" }),
             args => cmd(cmdSignup(args, args.email, args.password))
@@ -407,17 +408,22 @@ async function main(): Promise<void> {
             args => cmd(cmdLogin(args, args.email, args.password))
         )
         .command(
-            "create-app <name>",
+            "new <name>",
             dim("Create a new app"),
             ya => ya.positional("name", { type: "string" }),
             args => cmd(cmdCreateApp(args, args.name))
         )
-        .command("apps", dim("List your apps"), {}, args => cmd(listApps(args)))
         .command(
-            "experiments <appKey | name>",
-            dim("Show experiments for an app"),
-            ya => ya.positional("appKey", { type: "string" }),
-            args => cmd(cmdListExperiments(args, args.appKey))
+            "ls [key|name]",
+            dim("List apps or experiments for an app"),
+            ya => ya.positional("key", { type: "string" }),
+            args => {
+                if (args.key !== undefined) {
+                    cmd(cmdListExperiments(args, args.key));
+                } else {
+                    cmd(listApps(args));
+                }
+            }
         )
         .command("graphql", false, {}, args => cmd(graphQL(args)))
         .wrap(yargs.terminalWidth()).argv;
@@ -426,8 +432,8 @@ async function main(): Promise<void> {
         if ((await tryGetUserInfo()) === undefined) {
             console.error("You're not logged in to autotune.");
             console.error("");
-            console.error("  Create account: autotune create-account EMAIL PASSWORD");
-            console.error("  Log in:         autotune login EMAIL PASSWORD");
+            console.error("  Create account: tune signup EMAIL PASSWORD");
+            console.error("  Log in:         tune login EMAIL PASSWORD");
             console.error("");
         }
         yargs.showHelp();
