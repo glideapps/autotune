@@ -35,45 +35,38 @@ export class ExperimentOptions {
 export type CompletionCallback = () => void;
 
 export class Client {
-    private readonly state: {
-        appKey: string;
-        serialized: SerializedState;
-        experimentOptions: { [name: string]: ExperimentOptions };
-        experiments: { [name: string]: Experiment };
-        defaultCompletions: { [name: string]: Experiment };
-        queuedCompletedExperiments: { [name: string]: Experiment };
-        queuedStartedExperiments: { [name: string]: Experiment };
-    };
+    private serialized: SerializedState;
+    private readonly experimentOptions: { [name: string]: ExperimentOptions } = {};
+    private readonly experiments: { [name: string]: Experiment } = {};
+    private readonly defaultCompletions: { [name: string]: Experiment } = {};
+    private queuedCompletedExperiments: { [name: string]: Experiment } = {};
+    private queuedStartedExperiments: { [name: string]: Experiment } = {};
 
-    constructor(private readonly environment: Environment, appKey: string, then: () => void, outcomes?: Outcomes) {
+    constructor(
+        private readonly environment: Environment,
+        private readonly appKey: string,
+        then: () => void,
+        outcomes?: Outcomes
+    ) {
         this.log("Initialize", appKey);
 
-        this.state = {
-            appKey: appKey,
-            experiments: {},
-            experimentOptions: {},
-            defaultCompletions: {},
-            queuedCompletedExperiments: {},
-            queuedStartedExperiments: {},
-            serialized: defaultSerializedState
-        };
-
+        this.serialized = defaultSerializedState;
         try {
             const stateString = environment.getLocalStorage(this.storageKey("state"));
             if (stateString !== undefined) {
-                this.state.serialized = Convert.toSerializedState(stateString);
+                this.serialized = Convert.toSerializedState(stateString);
             }
         } catch {}
 
         const now = new Date().getTime();
-        const beginNewSession = now - this.state.serialized.lastInitialized > SESSION_EXPIRES_AFTER;
+        const beginNewSession = now - this.serialized.lastInitialized > SESSION_EXPIRES_AFTER;
 
         if (beginNewSession) {
             this.log("Starting a new session");
-            this.state.serialized.experimentPicks = {};
+            this.serialized.experimentPicks = {};
         }
 
-        this.state.serialized.lastInitialized = now;
+        this.serialized.lastInitialized = now;
         this.serializeStateDebounced();
 
         if (outcomes !== undefined) {
@@ -107,9 +100,9 @@ export class Client {
     }
 
     private serializeStateDebounced = debounce(() => {
-        this.log("Writing state", this.state.serialized);
+        this.log("Writing state", this.serialized);
         try {
-            const stateString = Convert.serializedStateToJson(this.state.serialized);
+            const stateString = Convert.serializedStateToJson(this.serialized);
             this.environment.setLocalStorage(this.storageKey("state"), stateString);
         } catch (e) {
             this.error("Could not save state:", e.message);
@@ -129,12 +122,12 @@ export class Client {
     }
 
     private startExperiment(theExperiment: Experiment): void {
-        this.state.queuedStartedExperiments[theExperiment.name] = theExperiment;
+        this.queuedStartedExperiments[theExperiment.name] = theExperiment;
         this.startExperimentsDebounced();
     }
 
     private startExperimentsDebounced = debounce(() => {
-        let experiments = mapObject(this.state.queuedStartedExperiments, e => ({
+        let experiments = mapObject(this.queuedStartedExperiments, e => ({
             instanceKey: e.key,
             options: e.options,
             pick: e.pick,
@@ -143,14 +136,14 @@ export class Client {
 
         this.log("Starting experiments", experiments);
 
-        this.state.queuedStartedExperiments = {};
+        this.queuedStartedExperiments = {};
 
         this.environment.http(
             "POST",
             api("/startExperiments"),
             {
                 version: 2,
-                appKey: this.state.appKey,
+                appKey: this.appKey,
                 experiments,
                 ctx: this.getClientContext()
             },
@@ -162,14 +155,14 @@ export class Client {
     }, 100);
 
     completeExperiment(theExperiment: Experiment, then: CompletionCallback | undefined): void {
-        this.state.queuedCompletedExperiments[theExperiment.name] = theExperiment;
+        this.queuedCompletedExperiments[theExperiment.name] = theExperiment;
         this.completeExperimentsDebounced(then);
     }
 
     private completeExperimentsDebounced = debounce((then: CompletionCallback | undefined) => {
-        const experiments = getOwnPropertyValues(this.state.queuedCompletedExperiments);
+        const experiments = getOwnPropertyValues(this.queuedCompletedExperiments);
 
-        this.state.queuedCompletedExperiments = {};
+        this.queuedCompletedExperiments = {};
 
         const experimentsByKey: CompleteExperimentsRequest["experiments"] = {};
         for (const e of experiments) {
@@ -191,7 +184,7 @@ export class Client {
             api("/completeExperiments"),
             {
                 version: 1,
-                appKey: this.state.appKey,
+                appKey: this.appKey,
                 experiments: experimentsByKey
             },
             () => callThen(),
@@ -203,7 +196,7 @@ export class Client {
     }, 10);
 
     completeDefaults(score: number, then: CompletionCallback | undefined): void {
-        const completions = this.state.defaultCompletions;
+        const completions = this.defaultCompletions;
         Object.getOwnPropertyNames(completions).forEach(name => completions[name].complete(score, then));
     }
 
@@ -212,10 +205,10 @@ export class Client {
             Object.getOwnPropertyNames(outcomes).forEach(name => {
                 // If there are already options there, the experiment is already running,
                 // so don't overwrite them.
-                if (this.state.experimentOptions[name] !== undefined) return;
+                if (this.experimentOptions[name] !== undefined) return;
 
                 const { option, epsilon } = lookupBestOption(this.getClientContext(), outcomes[name]);
-                this.state.experimentOptions[name] = new ExperimentOptions(outcomes[name].options, option, epsilon);
+                this.experimentOptions[name] = new ExperimentOptions(outcomes[name].options, option, epsilon);
             });
 
             startHTMLExperiments();
@@ -225,28 +218,28 @@ export class Client {
     }
 
     experiment(name: string, optionNames: string[]): Experiment {
-        let ex = this.state.experiments[name];
+        let ex = this.experiments[name];
         if (ex !== undefined) return ex;
-        let options = this.state.experimentOptions[name];
+        let options = this.experimentOptions[name];
         if (options === undefined) {
-            options = this.state.experimentOptions[name] = new ExperimentOptions(optionNames);
+            options = this.experimentOptions[name] = new ExperimentOptions(optionNames);
         }
-        ex = this.state.experiments[name] = new Experiment(this, name, options);
-        this.state.defaultCompletions[name] = ex;
+        ex = this.experiments[name] = new Experiment(this, name, options);
+        this.defaultCompletions[name] = ex;
         this.startExperiment(ex);
         return ex;
     }
 
     private storageKey(path: string): string {
-        return `autotune.v1.${this.state.appKey}.${path}`;
+        return `autotune.v1.${this.appKey}.${path}`;
     }
 
     loadPick(name: string): string | undefined {
-        return this.state.serialized.experimentPicks[name];
+        return this.serialized.experimentPicks[name];
     }
 
     savePick(name: string, pick: string) {
-        this.state.serialized.experimentPicks[name] = pick;
+        this.serialized.experimentPicks[name] = pick;
         this.serializeStateDebounced();
     }
 }
