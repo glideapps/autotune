@@ -1,3 +1,4 @@
 dist
 node_modules
 src/common/models.ts
+src/common/ClientConfig.ts
