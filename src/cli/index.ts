@@ -19,7 +19,6 @@ const cognitoAccessKeyID = "AKIAI2GRN6DCKCABTKGQ";
 const cognitoSecretAccessKey = "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";
 const clientID = "104m4anpa00b724preu1dco9vj";
 
-const dimBlue = (x: string) => dim(blue(x));
 const { red, yellow, blue, magenta, cyan, green, dim, bold } = chalk;
 
 const cognito = new CognitoIdentityServiceProvider({
@@ -254,17 +253,7 @@ async function cmdCreateApp(_args: yargs.Arguments, name: string): Promise<void>
     console.log();
 
     console.log(
-        [
-            dimBlue("<"),
-            blue("script"),
-            " ",
-            yellow("src"),
-            dimBlue("="),
-            red(`"${clientUrl(appKey)}"`),
-            dimBlue("></"),
-            blue("script"),
-            dimBlue(">")
-        ].join("")
+        [blue("<script"), " ", yellow("src"), blue("="), red(`"${clientUrl(appKey)}"`), blue("></script>")].join("")
     );
 }
 
