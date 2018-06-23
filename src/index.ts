@@ -14,17 +14,6 @@ export function initialize(appKey: string, then: () => void, outcomes?: Outcomes
     client = new Client(env, appKey, then, outcomes);
 }
 
-if (typeof window !== "undefined" && typeof (window as any).autotuneConfig !== "undefined") {
-    const config: ClientConfig = (window as any).autotuneConfig;
-    initialize(
-        config.appKey,
-        () => {
-            return;
-        },
-        config.outcomes
-    );
-}
-
 export function flipCoin(experimentName: string): boolean {
     if (client === undefined) {
         env.error("autotune must be initialized before calling flipCoin");
@@ -84,4 +73,15 @@ export function complete(scoreOrThen: number | CompletionCallback | undefined, m
     }
 
     client.completeDefaults(score, then);
+}
+
+if (typeof window !== "undefined" && typeof (window as any).autotuneConfig !== "undefined") {
+    const config: ClientConfig = (window as any).autotuneConfig;
+    initialize(
+        config.appKey,
+        () => {
+            return;
+        },
+        config.outcomes
+    );
 }

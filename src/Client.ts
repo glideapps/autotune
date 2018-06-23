@@ -1,8 +1,6 @@
 import { CompleteExperimentsRequest, outcomesUrl, ClientContext } from "./common/ClientAPI";
 import { Outcome } from "./common/ClientConfig";
 
-import { startHTMLExperiments } from "./html";
-
 import { Convert, SerializedState } from "./common/models";
 
 import { Environment } from "./Environment";
@@ -211,7 +209,7 @@ export class Client {
                 this.experimentOptions[name] = new ExperimentOptions(outcomes[name].options, option, epsilon);
             });
 
-            startHTMLExperiments();
+            this.environment.startHTMLExperiments();
         } catch (e) {
             this.error("Couldn't finish init", e);
         }

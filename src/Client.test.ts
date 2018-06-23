@@ -1,4 +1,4 @@
-import { Client } from "./Client";
+import { Client, Outcomes } from "./Client";
 import { Environment } from "./Environment";
 
 const appKey = "abcde";
@@ -7,10 +7,17 @@ class TestEnvironment implements Environment {
     readonly logs: any[][] = [];
     readonly errors: any[][] = [];
 
+    numOutcomesRequested: number = 0;
+    htmlExperimentsStarted: boolean = false;
+
+    constructor(private readonly outcomes: Outcomes | undefined) {}
+
     log(...args: any[]): void {
+        console.log(...args);
         this.logs.push(args);
     }
     error(...args: any[]): void {
+        console.error(...args);
         this.errors.push(args);
     }
     getTimeZoneOffset(): number {
@@ -26,8 +33,19 @@ class TestEnvironment implements Environment {
         resolve: (data: any) => void,
         reject: (err: Error) => void
     ): void {
-        console.log(`${method} to ${url}`);
-        reject(new Error("HTTP not implemented"));
+        if (method === "GET" && url.endsWith(`${appKey}.tree.json`)) {
+            this.numOutcomesRequested += 1;
+            setTimeout(() => {
+                if (this.outcomes === undefined) {
+                    reject(new Error("Simulated network error"));
+                } else {
+                    console.log("returning HTTP");
+                    resolve(this.outcomes);
+                }
+            }, 0);
+        } else {
+            fail(`Unexpected HTTP request: ${method} to ${url}`);
+        }
     }
     getLocalStorage(key: string): string | undefined {
         throw new Error("Method not implemented.");
@@ -35,22 +53,43 @@ class TestEnvironment implements Environment {
     setLocalStorage(key: string, value: string): void {
         throw new Error("Method not implemented.");
     }
+    startHTMLExperiments(): void {
+        this.htmlExperimentsStarted = true;
+    }
 }
 
 function makeClient(env: Environment, then: () => void): Client {
     return new Client(env, appKey, then);
 }
 
-test("alive", async () => {
-    return new Promise((resolve, reject) => {
-        try {
-            const env = new TestEnvironment();
-            makeClient(env, () => {
-                expect(env.errors.length).toBeGreaterThan(0);
-                resolve();
-            });
-        } catch (e) {
-            reject(e);
-        }
+function testAsync(name: string, fn: (resolve: () => void) => Promise<void>): void {
+    test(name, async () => {
+        return new Promise((resolve, reject) => {
+            try {
+                fn(resolve);
+            } catch (e) {
+                reject(e);
+            }
+        });
+    });
+}
+
+testAsync("can init when network fails", async resolve => {
+    const env = new TestEnvironment(undefined);
+    makeClient(env, () => {
+        expect(env.numOutcomesRequested).toBe(1);
+        expect(env.errors.length).toBeGreaterThan(0);
+        expect(env.htmlExperimentsStarted).toBe(true);
+        resolve();
+    });
+});
+
+test("can init with network", async resolve => {
+    const env = new TestEnvironment({});
+    makeClient(env, () => {
+        expect(env.numOutcomesRequested).toBe(1);
+        expect(env.errors.length).toBe(0);
+        expect(env.htmlExperimentsStarted).toBe(true);
+        resolve();
     });
 });

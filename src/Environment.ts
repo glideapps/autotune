@@ -15,4 +15,6 @@ export interface Environment {
 
     getLocalStorage(key: string): string | undefined;
     setLocalStorage(key: string, value: string): void;
+
+    startHTMLExperiments(): void;
 }

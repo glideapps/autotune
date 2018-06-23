@@ -1,4 +1,5 @@
 import { Environment } from "./Environment";
+import { startHTMLExperiments } from "./html";
 
 const BROWSER = typeof window !== "undefined";
 
@@ -76,5 +77,9 @@ export class BrowserEnvironment implements Environment {
 
     setLocalStorage(key: string, value: string): void {
         localStorage[key] = value;
+    }
+
+    startHTMLExperiments(): void {
+        startHTMLExperiments();
     }
 }
