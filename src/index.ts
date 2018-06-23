@@ -42,9 +42,18 @@ const defaultSerializedState: SerializedState = {
     experimentPicks: {}
 };
 
+export class ExperimentOptions {
+    constructor(
+        readonly optionNames: string[],
+        readonly bestOption: string | undefined = undefined,
+        readonly epsilon: number = 1
+    ) {}
+}
+
 const state: {
     appKey: string;
     serialized: SerializedState;
+    experimentOptions: { [name: string]: ExperimentOptions };
     experiments: { [name: string]: Experiment };
     defaultCompletions: { [name: string]: Experiment };
     queuedCompletedExperiments: { [name: string]: Experiment };
@@ -52,6 +61,7 @@ const state: {
 } = {
     appKey: "",
     experiments: {},
+    experimentOptions: {},
     defaultCompletions: {},
     queuedCompletedExperiments: {},
     queuedStartedExperiments: {},
@@ -189,12 +199,12 @@ function lookupBestOption(outcome: Outcome | undefined): BestOption {
 function finishInit(outcomes: Outcomes): void {
     try {
         Object.getOwnPropertyNames(outcomes).forEach(name => {
-            // If there's already an experiment there, it's already running,
-            // so don't overwrite it.
-            if (state.experiments[name] !== undefined) return;
+            // If there are already options there, the experiment is already running,
+            // so don't overwrite them.
+            if (state.experimentOptions[name] !== undefined) return;
 
             const { option, epsilon } = lookupBestOption(outcomes[name]);
-            state.experiments[name] = new Experiment(name, option, epsilon);
+            state.experimentOptions[name] = new ExperimentOptions(outcomes[name].options, option, epsilon);
         });
 
         startHTMLExperiments();
@@ -251,11 +261,14 @@ export function initialize(appKey: string, then: () => void, outcomes?: Outcomes
     );
 }
 
-function experiment(name: string): Experiment {
-    let ex = state.experiments[name] as Experiment;
-    if (ex === undefined) {
-        ex = state.experiments[name] = new Experiment(name);
+function experiment(name: string, optionNames: string[]): Experiment {
+    let ex = state.experiments[name];
+    if (ex !== undefined) return ex;
+    let options = state.experimentOptions[name];
+    if (options === undefined) {
+        options = state.experimentOptions[name] = new ExperimentOptions(optionNames);
     }
+    ex = state.experiments[name] = new Experiment(name, options);
     return ex;
 }
 
@@ -276,15 +289,10 @@ export class Experiment {
     payoff?: number;
     pick?: string;
     pickedBest?: boolean;
-    options?: string[];
 
     readonly key: string;
 
-    constructor(
-        public readonly name: string,
-        readonly bestOption: string | undefined = undefined,
-        readonly epsilon: number = 1
-    ) {
+    constructor(readonly name: string, readonly options: ExperimentOptions) {
         this.key = uuidv4();
     }
 
@@ -302,30 +310,27 @@ export class Experiment {
         completeExperiment(this, then);
     }
 
-    // FIXME: This shouldn't be in here.  Maybe a CoinFlipExperiment subclass?
-    flipCoin(): boolean {
-        return this.oneOf("true" as any, "false" as any) === "true";
-    }
+    getPick(): string {
+        if (this.pick !== undefined) return this.pick;
 
-    oneOf(...options: string[]): string {
-        this.options = options;
+        const { optionNames, bestOption } = this.options;
 
         const savedPick = Experiment.loadPick(this.name);
-        if (savedPick !== undefined && this.options.indexOf(savedPick) !== -1) {
-            return this.setValueAndStartExperiment(savedPick, savedPick === this.bestOption);
+        if (savedPick !== undefined && optionNames.indexOf(savedPick) !== -1) {
+            return this.setValueAndStartExperiment(savedPick, savedPick === bestOption);
         }
 
         const pickRandom =
-            this.bestOption === undefined ||
+            bestOption === undefined ||
             // The best option may have been removed from the option set
-            this.options.indexOf(this.bestOption) === -1 ||
-            Math.random() < this.epsilon;
+            optionNames.indexOf(bestOption) === -1 ||
+            Math.random() < this.options.epsilon;
 
         let pick: string;
-        if (pickRandom || this.bestOption === undefined) {
-            pick = options[Math.floor(Math.random() * options.length)];
+        if (pickRandom || bestOption === undefined) {
+            pick = optionNames[Math.floor(Math.random() * optionNames.length)];
         } else {
-            pick = this.bestOption;
+            pick = bestOption;
         }
 
         Experiment.savePick(this.name, pick);
@@ -334,23 +339,31 @@ export class Experiment {
 }
 
 export function flipCoin(experimentName: string): boolean {
-    const ex = experiment(experimentName);
+    const ex = experiment(experimentName, ["true", "false"]);
     state.defaultCompletions[experimentName] = ex;
-    return ex.flipCoin();
+    return ex.getPick() === "true";
 }
 
 export function oneOf(experimentName: string, options: string[]): string;
 export function oneOf<T>(experimentName: string, options: { [label: string]: T }): T;
 export function oneOf<T>(experimentName: string, options: string[] | { [label: string]: T }): T | string {
-    const ex = experiment(experimentName);
+    const optionsIsArray = Object.prototype.toString.call(options) === "[object Array]";
+    let optionNames: string[];
+    if (optionsIsArray) {
+        optionNames = options as string[];
+    } else {
+        optionNames = Object.getOwnPropertyNames(options);
+    }
+
+    const ex = experiment(experimentName, optionNames);
     state.defaultCompletions[experimentName] = ex;
 
-    const optionsIsArray = Object.prototype.toString.call(options) === "[object Array]";
+    const pick = ex.getPick();
+
     if (optionsIsArray) {
-        return ex.oneOf(...(options as string[]));
+        return pick;
     } else {
-        const choice = ex.oneOf(...Object.getOwnPropertyNames(options));
-        return (options as { [label: string]: T })[choice];
+        return (options as { [label: string]: T })[pick];
     }
 }
 
