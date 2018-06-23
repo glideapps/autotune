@@ -122,7 +122,7 @@ const completeExperimentsDebounced = debounce((then: CompletionCallback | undefi
 
     const experimentsByKey: CompleteExperimentsRequest["experiments"] = {};
     for (const e of experiments) {
-        if (e.pick !== undefined && e.payoff !== undefined) {
+        if (e.payoff !== undefined) {
             experimentsByKey[e.key] = { pick: e.pick, payoff: e.payoff };
         }
     }
@@ -286,62 +286,53 @@ export class Experiment {
         serializeStateDebounced();
     }
 
-    payoff?: number;
-    pick?: string;
-    pickedBest?: boolean;
-
     readonly key: string;
+
+    readonly pick: string;
+    readonly pickedBest: boolean;
+
+    payoff?: number;
 
     constructor(readonly name: string, readonly options: ExperimentOptions) {
         this.key = uuidv4();
-    }
 
-    private setValueAndStartExperiment(value: string, pickedBest: boolean): string {
-        this.pickedBest = pickedBest;
-        if (this.pick === undefined) {
-            this.pick = value;
-            startExperiment(this);
+        const { optionNames, bestOption } = this.options;
+
+        const savedPick = Experiment.loadPick(this.name);
+        if (savedPick !== undefined && optionNames.indexOf(savedPick) !== -1) {
+            this.pick = savedPick;
+            this.pickedBest = savedPick === bestOption;
+        } else {
+            const pickRandom =
+                bestOption === undefined ||
+                // The best option may have been removed from the option set
+                optionNames.indexOf(bestOption) === -1 ||
+                Math.random() < this.options.epsilon;
+
+            let pick: string;
+            if (pickRandom || bestOption === undefined) {
+                pick = optionNames[Math.floor(Math.random() * optionNames.length)];
+            } else {
+                pick = bestOption;
+            }
+
+            Experiment.savePick(this.name, pick);
+            this.pick = pick;
+            this.pickedBest = !pickRandom;
         }
-        return this.pick;
+        startExperiment(this);
     }
 
     complete(payoff: number = 1, then: CompletionCallback | undefined) {
         this.payoff = payoff;
         completeExperiment(this, then);
     }
-
-    getPick(): string {
-        if (this.pick !== undefined) return this.pick;
-
-        const { optionNames, bestOption } = this.options;
-
-        const savedPick = Experiment.loadPick(this.name);
-        if (savedPick !== undefined && optionNames.indexOf(savedPick) !== -1) {
-            return this.setValueAndStartExperiment(savedPick, savedPick === bestOption);
-        }
-
-        const pickRandom =
-            bestOption === undefined ||
-            // The best option may have been removed from the option set
-            optionNames.indexOf(bestOption) === -1 ||
-            Math.random() < this.options.epsilon;
-
-        let pick: string;
-        if (pickRandom || bestOption === undefined) {
-            pick = optionNames[Math.floor(Math.random() * optionNames.length)];
-        } else {
-            pick = bestOption;
-        }
-
-        Experiment.savePick(this.name, pick);
-        return this.setValueAndStartExperiment(pick, !pickRandom);
-    }
 }
 
 export function flipCoin(experimentName: string): boolean {
     const ex = experiment(experimentName, ["true", "false"]);
     state.defaultCompletions[experimentName] = ex;
-    return ex.getPick() === "true";
+    return ex.pick === "true";
 }
 
 export function oneOf(experimentName: string, options: string[]): string;
@@ -358,7 +349,7 @@ export function oneOf<T>(experimentName: string, options: string[] | { [label: s
     const ex = experiment(experimentName, optionNames);
     state.defaultCompletions[experimentName] = ex;
 
-    const pick = ex.getPick();
+    const pick = ex.pick;
 
     if (optionsIsArray) {
         return pick;
