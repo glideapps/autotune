@@ -17,11 +17,6 @@ function api(path: string) {
     return `https://2vyiuehl9j.execute-api.us-east-2.amazonaws.com/prod/${path}`;
 }
 
-const defaultSerializedState: SerializedState = {
-    lastInitialized: 0,
-    experimentPicks: {}
-};
-
 export class ExperimentOptions {
     constructor(
         readonly optionNames: string[],
@@ -43,12 +38,16 @@ export class Client {
     constructor(
         private readonly environment: Environment,
         private readonly appKey: string,
-        then: () => void,
+        then: (c: Client) => void,
         outcomes?: Outcomes
     ) {
         this.log("Initialize", appKey);
 
-        this.serialized = defaultSerializedState;
+        this.serialized = {
+            lastInitialized: 0,
+            experimentPicks: {}
+        };
+
         try {
             const stateString = environment.getLocalStorage(this.storageKey("state"));
             if (stateString !== undefined) {
@@ -79,17 +78,17 @@ export class Client {
             o => {
                 this.log("Got outcomes", o);
                 this.finishInit(o);
-                then();
+                then(this);
             },
             e => {
                 this.error("Could not get outcomes", e);
                 this.finishInit({});
-                then();
+                then(this);
             }
         );
     }
 
-    private log(...args: any[]): void {
+    log(...args: any[]): void {
         this.environment.log(...args);
     }
 
@@ -253,7 +252,7 @@ export class Experiment {
     constructor(private readonly client: Client, readonly name: string, readonly options: ExperimentOptions) {
         this.key = uuidv4();
 
-        const { optionNames, bestOption } = this.options;
+        const { optionNames, bestOption, epsilon } = this.options;
 
         const savedPick = this.client.loadPick(this.name);
         if (savedPick !== undefined && optionNames.indexOf(savedPick) !== -1) {
@@ -264,7 +263,7 @@ export class Experiment {
                 bestOption === undefined ||
                 // The best option may have been removed from the option set
                 optionNames.indexOf(bestOption) === -1 ||
-                Math.random() < this.options.epsilon;
+                Math.random() < epsilon;
 
             let pick: string;
             if (pickRandom || bestOption === undefined) {
