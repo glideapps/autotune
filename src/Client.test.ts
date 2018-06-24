@@ -196,6 +196,11 @@ function langEq(v: string, l: Tree, r: Tree): Tree {
     return { at: "lang", op: Op.Eq, v, l, r };
 }
 
+function checkInit(env: TestEnvironment): void {
+    expect(env.numOutcomesRequested).toBe(1);
+    expect(env.htmlExperimentsStarted).toBe(true);
+}
+
 function checkState(localStorage: { [key: string]: string }, pick: string | undefined): void {
     const str = localStorage[`autotune.v1.${appKey}.state`];
     if (str === undefined) {
@@ -235,16 +240,28 @@ function checkStartExperiments(data: any, options: string[], pick: string, picke
 }
 
 TestEnvironment.test("can init when network fails", undefined, env => {
+    checkInit(env);
     after(200, () => {
-        expect(env.numOutcomesRequested).toBe(1);
         expect(env.errors.length).toBeGreaterThan(0);
-        expect(env.htmlExperimentsStarted).toBe(true);
+        expect(env.startExperimentsData).toBe(undefined);
+        env.resolve();
+    });
+});
+
+TestEnvironment.test("can init with network", {}, env => {
+    checkInit(env);
+    after(200, () => {
+        if (env.allowSetLocalStorage) {
+            expect(env.errors.length).toBe(0);
+            checkState(env.localStorage, undefined);
+        }
         expect(env.startExperimentsData).toBe(undefined);
         env.resolve();
     });
 });
 
 TestEnvironment.test("can run experiment when network fails", undefined, env => {
+    checkInit(env);
     const options = makeOptions(2);
     const ex = env.getClient().experiment(experimentName, options);
     expect(ex.pick).toMatch(/^o[01]$/);
@@ -257,20 +274,8 @@ TestEnvironment.test("can run experiment when network fails", undefined, env => 
     });
 });
 
-TestEnvironment.test("can init with network", {}, env => {
-    after(200, () => {
-        expect(env.numOutcomesRequested).toBe(1);
-        expect(env.htmlExperimentsStarted).toBe(true);
-        if (env.allowSetLocalStorage) {
-            expect(env.errors.length).toBe(0);
-            checkState(env.localStorage, undefined);
-        }
-        expect(env.startExperimentsData).toBe(undefined);
-        env.resolve();
-    });
-});
-
 TestEnvironment.test("single node", makeOutcomes(2, leaf(1)), env => {
+    checkInit(env);
     const ex = env.getClient().experiment(experimentName, env.getOptions());
     expect(ex.pick).toBe("o1");
     after(200, () => {
@@ -284,6 +289,7 @@ TestEnvironment.test("single node", makeOutcomes(2, leaf(1)), env => {
 
 function testTree(name: string, outcomes: Outcomes, pick: string): void {
     TestEnvironment.test(name, outcomes, env => {
+        checkInit(env);
         const ex = env.getClient().experiment(experimentName, env.getOptions());
         expect(ex.pick).toBe(pick);
         after(200, () => {
