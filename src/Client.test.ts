@@ -192,6 +192,10 @@ function tzoLt(v: number, l: Tree, r: Tree): Tree {
     return { at: "tzo", op: Op.Lt, v, l, r };
 }
 
+function langEq(v: string, l: Tree, r: Tree): Tree {
+    return { at: "lang", op: Op.Eq, v, l, r };
+}
+
 function checkState(localStorage: { [key: string]: string }, pick: string | undefined): void {
     const str = localStorage[`autotune.v1.${appKey}.state`];
     if (str === undefined) {
@@ -295,19 +299,16 @@ function testTree(name: string, outcomes: Outcomes, pick: string): void {
 testTree("branch on tzo left", makeOutcomes(3, tzoLt(-410, leaf(1), leaf(2))), "o1");
 testTree("branch on tzo right", makeOutcomes(3, tzoLt(-430, leaf(1), leaf(2))), "o2");
 
-// Missing tests:
+testTree("branch on lang left", makeOutcomes(3, langEq("en", leaf(1), leaf(2))), "o1");
+testTree("branch on lang right", makeOutcomes(3, langEq("de", leaf(1), leaf(2))), "o2");
 
-// Branching on language works
+// Missing tests:
 
 // undefined language works
 
 // Experiments are completed with a callback
 
-// Failure of startExperiments still returns a pick
-
 // Not making unnecessary network calls - wait 1s or so
-
-// Last picks are saved in local storage
 
 // Picks in local storage are honored if they're young
 
