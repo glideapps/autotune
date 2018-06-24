@@ -1,4 +1,4 @@
-#!/usr/bin/env bash
+#!/usr/bin/env bash -e
 
 if [ "x$BUILDKITE_BRANCH" != "xmaster" ] ; then
     echo "Branch is $BUILDKITE_BRANCH, not master - not publishing"
