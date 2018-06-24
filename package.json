@@ -12,7 +12,8 @@
         "watch": "watch --filter=script/watch-filter.js 'npm run build' src",
         "serve": "serve -l 3001",
         "start": "concurrently 'npm run watch' 'npm run serve' 'sleep 1 && open http://localhost:3001/samples'",
-        "tslint": "tslint --project ."
+        "tslint": "tslint --project .",
+        "test": "true"
     },
     "files": [
         "dist"
