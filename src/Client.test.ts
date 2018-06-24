@@ -3,6 +3,8 @@ import { Environment } from "./Environment";
 import { Tree, Op } from "./common/ClientConfig";
 import { Convert } from "./common/models";
 
+import * as validateUUID from "uuid-validate";
+
 const appKey = "abcde";
 const experimentName = "ex";
 const clientContext = { tzo: -420, lang: "en" };
@@ -47,13 +49,29 @@ class TestEnvironment implements Environment {
             });
         }
 
-        test("", (n, resolve) => new TestEnvironment(n, outcomes, false, false, resolve));
-        test(" with local storage", (n, resolve) => new TestEnvironment(n, outcomes, false, true, resolve));
-        test(" with startExperiments", (n, resolve) => new TestEnvironment(n, outcomes, true, false, resolve));
-        test(
-            " with startExperiments and local storage",
-            (n, resolve) => new TestEnvironment(n, outcomes, true, true, resolve)
-        );
+        for (const allowStartExperiments of [false, true]) {
+            for (const allowSetLocalStorage of [false, true]) {
+                for (const allowCompleteExperiments of [false, true]) {
+                    const withs: string[] = [];
+                    if (allowStartExperiments) withs.push("startExperiments");
+                    if (allowSetLocalStorage) withs.push("local storage");
+                    if (allowCompleteExperiments) withs.push("completeExperiments");
+                    const suffix = withs.length === 0 ? "" : ` with ${withs.join(",")}`;
+                    test(
+                        suffix,
+                        (n, resolve) =>
+                            new TestEnvironment(
+                                n,
+                                outcomes,
+                                allowStartExperiments,
+                                allowSetLocalStorage,
+                                allowCompleteExperiments,
+                                resolve
+                            )
+                    );
+                }
+            }
+        }
     }
 
     private maybeClient: Client | undefined;
@@ -64,6 +82,7 @@ class TestEnvironment implements Environment {
     numOutcomesRequested: number = 0;
     htmlExperimentsStarted: boolean = false;
     startExperimentsData: any = undefined;
+    completeExperimentsData: any = undefined;
     readonly localStorage: { [key: string]: string } = {};
 
     constructor(
@@ -71,6 +90,7 @@ class TestEnvironment implements Environment {
         private readonly outcomes: Outcomes | undefined,
         readonly allowStartExperiments: boolean,
         readonly allowSetLocalStorage: boolean,
+        readonly allowCompleteExperiments: boolean,
         readonly resolve: () => void
     ) {}
 
@@ -138,13 +158,26 @@ class TestEnvironment implements Environment {
                     return failAndThrow("No data given for startExperiments");
                 }
                 if (this.startExperimentsData !== undefined) {
-                    return failAndThrow("startExperiments requested more than once");
+                    return failAndThrow("startExperiments posted more than once");
                 }
                 this.startExperimentsData = data;
                 if (this.allowStartExperiments) {
                     resolve({});
                 } else {
                     reject(new Error("Simulated POST startExperiments failure"));
+                }
+            } else if (method === "POST" && url === apiURL("completeExperiments")) {
+                if (data === undefined) {
+                    return failAndThrow("No data given for completeExperiments");
+                }
+                if (this.completeExperimentsData !== undefined) {
+                    return failAndThrow("completeExperiments posted more than once");
+                }
+                this.completeExperimentsData = data;
+                if (this.allowCompleteExperiments) {
+                    resolve({});
+                } else {
+                    reject(new Error("Simulated POST completeExperiments failure"));
                 }
             } else {
                 fail(`Unexpected HTTP request: ${method} to ${url}`);
@@ -219,24 +252,39 @@ function checkState(localStorage: { [key: string]: string }, pick: string | unde
     }
 }
 
-function checkStartExperiments(data: any, options: string[], pick: string, pickedBest: boolean | undefined): void {
-    if (data === undefined) {
-        return failAndThrow("No startExperiments data");
-    }
+function checkStartExperiments(data: any, options: string[], pick: string, pickedBest: boolean | undefined): string {
     if (typeof data !== "object" || data === null) {
         return failAndThrow("Illegal startExperiments data");
     }
+
     expect(data.version).toBe(2);
     expect(data.appKey).toBe(appKey);
     expect(data.ctx).toEqual(clientContext);
+
     expect(Object.getOwnPropertyNames(data.experiments)).toEqual([experimentName]);
     const ex = data.experiments[experimentName];
-    // FIXME: check ex.instanceKey is a UUID
+    if (!validateUUID(ex.instanceKey, 4)) {
+        fail("instanceKey is not a v4 UUID");
+    }
     expect(ex.options).toEqual(options);
     expect(ex.pick).toBe(pick);
     if (pickedBest !== undefined) {
         expect(ex.pickedBest).toBe(pickedBest);
     }
+
+    return ex.instanceKey;
+}
+
+function checkCompleteExperiments(data: any, instanceKey: string, pick: string, payoff: number): void {
+    if (typeof data !== "object" || data === null) {
+        return failAndThrow("Illegal completeExperiments data");
+    }
+
+    expect(data.appKey).toBe(appKey);
+
+    const experiments: { [name: string]: any } = {};
+    experiments[instanceKey] = { pick, payoff };
+    expect(data.experiments).toEqual(experiments);
 }
 
 TestEnvironment.test("can init when network fails", undefined, env => {
@@ -288,18 +336,27 @@ TestEnvironment.test("single node", makeOutcomes(2, leaf(1)), env => {
 });
 
 function testTree(name: string, outcomes: Outcomes, pick: string): void {
-    TestEnvironment.test(name, outcomes, env => {
-        checkInit(env);
-        const ex = env.getClient().experiment(experimentName, env.getOptions());
-        expect(ex.pick).toBe(pick);
-        after(200, () => {
-            if (env.allowSetLocalStorage) {
-                checkState(env.localStorage, pick);
-            }
-            checkStartExperiments(env.startExperimentsData, env.getOptions(), pick, true);
-            env.resolve();
+    for (const complete of [false, true]) {
+        TestEnvironment.test(name + (complete ? " with completion" : ""), outcomes, env => {
+            checkInit(env);
+            const ex = env.getClient().experiment(experimentName, env.getOptions());
+            expect(ex.pick).toBe(pick);
+            after(200, () => {
+                if (env.allowSetLocalStorage) {
+                    checkState(env.localStorage, pick);
+                }
+                const instanceKey = checkStartExperiments(env.startExperimentsData, env.getOptions(), pick, true);
+                if (complete) {
+                    env.getClient().completeDefaults(0.123, () => {
+                        checkCompleteExperiments(env.completeExperimentsData, instanceKey, pick, 0.123);
+                        env.resolve();
+                    });
+                } else {
+                    env.resolve();
+                }
+            });
         });
-    });
+    }
 }
 
 testTree("branch on tzo left", makeOutcomes(3, tzoLt(-410, leaf(1), leaf(2))), "o1");
@@ -312,7 +369,7 @@ testTree("branch on lang right", makeOutcomes(3, langEq("de", leaf(1), leaf(2)))
 
 // undefined language works
 
-// Experiments are completed with a callback
+// Multiple experiments work
 
 // Not making unnecessary network calls - wait 1s or so
 
