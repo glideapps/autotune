@@ -1,4 +1,4 @@
-import { CompleteExperimentsRequest, outcomesUrl, ClientContext } from "./common/ClientAPI";
+import { CompleteExperimentsRequest, outcomesUrl, ClientContext, StartExperimentsRequest } from "./common/ClientAPI";
 import { Outcome } from "./common/ClientConfig";
 
 import { Convert, SerializedState } from "./common/models";
@@ -13,7 +13,7 @@ export type Outcomes = { [experimentKey: string]: Outcome };
 
 const SESSION_EXPIRES_AFTER = 24 /* hours */ * (60 * 60 * 1000) /* milliseconds/ hour */;
 
-function api(path: string) {
+export function apiURL(path: string) {
     return `https://2vyiuehl9j.execute-api.us-east-2.amazonaws.com/prod/${path}`;
 }
 
@@ -126,7 +126,7 @@ export class Client {
     private startExperimentsDebounced = debounce(() => {
         let experiments = mapObject(this.queuedStartedExperiments, e => ({
             instanceKey: e.key,
-            options: e.options,
+            options: e.options.optionNames,
             pick: e.pick,
             pickedBest: e.pickedBest
         }));
@@ -135,15 +135,16 @@ export class Client {
 
         this.queuedStartedExperiments = {};
 
+        const data: StartExperimentsRequest = {
+            version: 2,
+            appKey: this.appKey,
+            experiments,
+            ctx: this.getClientContext()
+        };
         this.environment.http(
             "POST",
-            api("/startExperiments"),
-            {
-                version: 2,
-                appKey: this.appKey,
-                experiments,
-                ctx: this.getClientContext()
-            },
+            apiURL("startExperiments"),
+            data,
             () => {
                 return;
             },
@@ -178,7 +179,7 @@ export class Client {
 
         this.environment.http(
             "POST",
-            api("/completeExperiments"),
+            apiURL("completeExperiments"),
             {
                 version: 1,
                 appKey: this.appKey,

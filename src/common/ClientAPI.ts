@@ -4,11 +4,13 @@ export type ClientContext = { [key: string]: string | number };
 
 export type StartExperimentsRequest = {
     appKey: string;
+    version: 2;
     experiments: {
         [name: string]: {
             instanceKey?: string;
             options: string[];
             pick: string;
+            pickedBest: boolean;
         };
     };
     ctx?: ClientContext;
