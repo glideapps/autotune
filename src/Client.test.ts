@@ -5,6 +5,8 @@ import { Convert } from "./common/models";
 
 import * as validateUUID from "uuid-validate";
 
+jest.useFakeTimers();
+
 const appKey = "abcde";
 const experimentName = "ex";
 const clientContext = { tzo: -420, lang: "en" };
@@ -32,20 +34,22 @@ function testAsync(name: string, fn: (resolve: () => void) => void): void {
     });
 }
 
-function after(ms: number, fn: () => void): void {
-    setTimeout(fn, ms);
-}
-
 class TestEnvironment implements Environment {
     static test(name: string, outcomes: Outcomes | undefined, fn: (env: TestEnvironment) => void): void {
-        function test(suffix: string, makeEnv: (name: string, resolve: () => void) => TestEnvironment) {
+        function test(suffix: string, makeEnv: (name: string) => TestEnvironment) {
             const fullName = name + suffix;
             testAsync(fullName, resolve => {
-                const env = makeEnv(fullName, resolve);
-                makeClient(env, client => {
-                    env.setClient(client);
-                    after(150, () => fn(env));
-                });
+                const env = makeEnv(fullName);
+                const callback = jest.fn();
+                const client = makeClient(env, callback);
+                env.setClient(client);
+                jest.advanceTimersByTime(150);
+                expect(callback).toHaveBeenCalledTimes(1);
+                expect(callback).toHaveBeenCalledWith(client);
+                fn(env);
+                jest.runAllTimers();
+                expect(callback).toHaveBeenCalledTimes(1);
+                resolve();
             });
         }
 
@@ -59,14 +63,13 @@ class TestEnvironment implements Environment {
                     const suffix = withs.length === 0 ? "" : ` with ${withs.join(",")}`;
                     test(
                         suffix,
-                        (n, resolve) =>
+                        n =>
                             new TestEnvironment(
                                 n,
                                 outcomes,
                                 allowStartExperiments,
                                 allowSetLocalStorage,
-                                allowCompleteExperiments,
-                                resolve
+                                allowCompleteExperiments
                             )
                     );
                 }
@@ -90,8 +93,7 @@ class TestEnvironment implements Environment {
         private readonly outcomes: Outcomes | undefined,
         readonly allowStartExperiments: boolean,
         readonly allowSetLocalStorage: boolean,
-        readonly allowCompleteExperiments: boolean,
-        readonly resolve: () => void
+        readonly allowCompleteExperiments: boolean
     ) {}
 
     setClient(client: Client): void {
@@ -120,12 +122,12 @@ class TestEnvironment implements Environment {
     }
 
     log(...args: any[]): void {
-        console.log(this.name, ...args);
+        // console.log(this.name, ...args);
         this.logs.push(args);
     }
 
     error(...args: any[]): void {
-        console.error(this.name, ...args);
+        // console.error(this.name, ...args);
         this.errors.push(args);
     }
 
@@ -144,13 +146,13 @@ class TestEnvironment implements Environment {
         resolve: (data: any) => void,
         reject: (err: Error) => void
     ): void {
+        // console.log(`${method} to ${url}`);
         setTimeout(() => {
             if (method === "GET" && url.endsWith(`${appKey}.tree.json`)) {
                 this.numOutcomesRequested += 1;
                 if (this.outcomes === undefined) {
                     reject(new Error("Simulated GET outcomes failure"));
                 } else {
-                    console.log("returning HTTP");
                     resolve(this.outcomes);
                 }
             } else if (method === "POST" && url === apiURL("startExperiments")) {
@@ -289,23 +291,19 @@ function checkCompleteExperiments(data: any, instanceKey: string, pick: string, 
 
 TestEnvironment.test("can init when network fails", undefined, env => {
     checkInit(env);
-    after(200, () => {
-        expect(env.errors.length).toBeGreaterThan(0);
-        expect(env.startExperimentsData).toBe(undefined);
-        env.resolve();
-    });
+    jest.advanceTimersByTime(200);
+    expect(env.errors.length).toBeGreaterThan(0);
+    expect(env.startExperimentsData).toBe(undefined);
 });
 
 TestEnvironment.test("can init with network", {}, env => {
     checkInit(env);
-    after(200, () => {
-        if (env.allowSetLocalStorage) {
-            expect(env.errors.length).toBe(0);
-            checkState(env.localStorage, undefined);
-        }
-        expect(env.startExperimentsData).toBe(undefined);
-        env.resolve();
-    });
+    jest.advanceTimersByTime(200);
+    if (env.allowSetLocalStorage) {
+        expect(env.errors.length).toBe(0);
+        checkState(env.localStorage, undefined);
+    }
+    expect(env.startExperimentsData).toBe(undefined);
 });
 
 TestEnvironment.test("can run experiment when network fails", undefined, env => {
@@ -313,26 +311,22 @@ TestEnvironment.test("can run experiment when network fails", undefined, env => 
     const options = makeOptions(2);
     const ex = env.getClient().experiment(experimentName, options);
     expect(ex.pick).toMatch(/^o[01]$/);
-    after(200, () => {
-        if (env.allowSetLocalStorage) {
-            checkState(env.localStorage, ex.pick);
-        }
-        checkStartExperiments(env.startExperimentsData, options, ex.pick, undefined);
-        env.resolve();
-    });
+    jest.advanceTimersByTime(200);
+    if (env.allowSetLocalStorage) {
+        checkState(env.localStorage, ex.pick);
+    }
+    checkStartExperiments(env.startExperimentsData, options, ex.pick, undefined);
 });
 
 TestEnvironment.test("single node", makeOutcomes(2, leaf(1)), env => {
     checkInit(env);
     const ex = env.getClient().experiment(experimentName, env.getOptions());
     expect(ex.pick).toBe("o1");
-    after(200, () => {
-        if (env.allowSetLocalStorage) {
-            checkState(env.localStorage, "o1");
-        }
-        checkStartExperiments(env.startExperimentsData, env.getOptions(), "o1", true);
-        env.resolve();
-    });
+    jest.advanceTimersByTime(200);
+    if (env.allowSetLocalStorage) {
+        checkState(env.localStorage, "o1");
+    }
+    checkStartExperiments(env.startExperimentsData, env.getOptions(), "o1", true);
 });
 
 function testTree(name: string, outcomes: Outcomes, pick: string): void {
@@ -341,20 +335,18 @@ function testTree(name: string, outcomes: Outcomes, pick: string): void {
             checkInit(env);
             const ex = env.getClient().experiment(experimentName, env.getOptions());
             expect(ex.pick).toBe(pick);
-            after(200, () => {
-                if (env.allowSetLocalStorage) {
-                    checkState(env.localStorage, pick);
-                }
-                const instanceKey = checkStartExperiments(env.startExperimentsData, env.getOptions(), pick, true);
-                if (complete) {
-                    env.getClient().completeDefaults(0.123, () => {
-                        checkCompleteExperiments(env.completeExperimentsData, instanceKey, pick, 0.123);
-                        env.resolve();
-                    });
-                } else {
-                    env.resolve();
-                }
-            });
+            jest.advanceTimersByTime(200);
+            if (env.allowSetLocalStorage) {
+                checkState(env.localStorage, pick);
+            }
+            const instanceKey = checkStartExperiments(env.startExperimentsData, env.getOptions(), pick, true);
+            if (complete) {
+                const callback = jest.fn();
+                env.getClient().completeDefaults(0.123, callback);
+                jest.advanceTimersByTime(150);
+                expect(callback).toHaveBeenCalledTimes(1);
+                checkCompleteExperiments(env.completeExperimentsData, instanceKey, pick, 0.123);
+            }
         });
     }
 }
@@ -370,8 +362,6 @@ testTree("branch on lang right", makeOutcomes(3, langEq("de", leaf(1), leaf(2)))
 // undefined language works
 
 // Multiple experiments work
-
-// Not making unnecessary network calls - wait 1s or so
 
 // Picks in local storage are honored if they're young
 
