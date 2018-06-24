@@ -16,33 +16,15 @@ function failAndThrow(msg: string): never {
     throw new Error(msg);
 }
 
-// If this is not a function, tslint complains that we have
-// an unused value.
-function makeClient(env: Environment, then: (c: Client) => void): Client {
-    return new Client(env, appKey, then);
-}
-
-function testAsync(name: string, fn: (resolve: () => void) => void): void {
-    test(name, async () => {
-        return new Promise((resolve, reject) => {
-            try {
-                fn(resolve);
-            } catch (e) {
-                reject(e);
-            }
-        });
-    });
-}
-
 class TestEnvironment implements Environment {
     private static testWithEnvironment(
         fullName: string,
         env: TestEnvironment,
         fn: (env: TestEnvironment) => void
     ): void {
-        testAsync(fullName, resolve => {
+        test(fullName, () => {
             const callback = jest.fn();
-            const client = makeClient(env, callback);
+            const client = new Client(env, appKey, callback);
             env.setClient(client);
             jest.advanceTimersByTime(150);
             expect(callback).toHaveBeenCalledTimes(1);
@@ -50,7 +32,6 @@ class TestEnvironment implements Environment {
             fn(env);
             jest.runAllTimers();
             expect(callback).toHaveBeenCalledTimes(1);
-            resolve();
         });
     }
 
