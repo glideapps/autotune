@@ -35,24 +35,26 @@ function testAsync(name: string, fn: (resolve: () => void) => void): void {
 }
 
 class TestEnvironment implements Environment {
-    static test(name: string, outcomes: Outcomes | undefined, fn: (env: TestEnvironment) => void): void {
-        function test(suffix: string, makeEnv: (name: string) => TestEnvironment) {
-            const fullName = name + suffix;
-            testAsync(fullName, resolve => {
-                const env = makeEnv(fullName);
-                const callback = jest.fn();
-                const client = makeClient(env, callback);
-                env.setClient(client);
-                jest.advanceTimersByTime(150);
-                expect(callback).toHaveBeenCalledTimes(1);
-                expect(callback).toHaveBeenCalledWith(client);
-                fn(env);
-                jest.runAllTimers();
-                expect(callback).toHaveBeenCalledTimes(1);
-                resolve();
-            });
-        }
+    private static testWithEnvironment(
+        fullName: string,
+        env: TestEnvironment,
+        fn: (env: TestEnvironment) => void
+    ): void {
+        testAsync(fullName, resolve => {
+            const callback = jest.fn();
+            const client = makeClient(env, callback);
+            env.setClient(client);
+            jest.advanceTimersByTime(150);
+            expect(callback).toHaveBeenCalledTimes(1);
+            expect(callback).toHaveBeenCalledWith(client);
+            fn(env);
+            jest.runAllTimers();
+            expect(callback).toHaveBeenCalledTimes(1);
+            resolve();
+        });
+    }
 
+    static test(name: string, outcomes: Outcomes | undefined, fn: (env: TestEnvironment) => void): void {
         for (const allowStartExperiments of [false, true]) {
             for (const allowSetLocalStorage of [false, true]) {
                 for (const allowCompleteExperiments of [false, true]) {
@@ -60,18 +62,15 @@ class TestEnvironment implements Environment {
                     if (allowStartExperiments) withs.push("startExperiments");
                     if (allowSetLocalStorage) withs.push("local storage");
                     if (allowCompleteExperiments) withs.push("completeExperiments");
-                    const suffix = withs.length === 0 ? "" : ` with ${withs.join(",")}`;
-                    test(
-                        suffix,
-                        n =>
-                            new TestEnvironment(
-                                n,
-                                outcomes,
-                                allowStartExperiments,
-                                allowSetLocalStorage,
-                                allowCompleteExperiments
-                            )
+                    const env = new TestEnvironment(
+                        outcomes,
+                        allowStartExperiments,
+                        allowSetLocalStorage,
+                        allowCompleteExperiments
                     );
+                    const suffix = withs.length === 0 ? "" : ` with ${withs.join(",")}`;
+                    const fullName = name + suffix;
+                    TestEnvironment.testWithEnvironment(fullName, env, fn);
                 }
             }
         }
@@ -89,7 +88,6 @@ class TestEnvironment implements Environment {
     readonly localStorage: { [key: string]: string } = {};
 
     constructor(
-        private readonly name: string,
         private readonly outcomes: Outcomes | undefined,
         readonly allowStartExperiments: boolean,
         readonly allowSetLocalStorage: boolean,
