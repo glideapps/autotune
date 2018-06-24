@@ -200,12 +200,13 @@ export class Client {
 
     private finishInit(outcomes: Outcomes): void {
         try {
+            const ctx = this.getClientContext();
             Object.getOwnPropertyNames(outcomes).forEach(name => {
                 // If there are already options there, the experiment is already running,
                 // so don't overwrite them.
                 if (this.experimentOptions[name] !== undefined) return;
 
-                const { option, epsilon } = lookupBestOption(this.getClientContext(), outcomes[name]);
+                const { option, epsilon } = lookupBestOption(ctx, outcomes[name]);
                 this.experimentOptions[name] = new ExperimentOptions(outcomes[name].options, option, epsilon);
             });
 
