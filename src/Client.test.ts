@@ -4,12 +4,13 @@ import { Tree, Op } from "./common/ClientConfig";
 import { Convert } from "./common/models";
 
 import * as validateUUID from "uuid-validate";
+import { ClientContext } from "./common/ClientAPI";
 
 jest.useFakeTimers();
 
 const appKey = "abcde";
 const experimentName = "ex";
-const clientContext = { tzo: -420, lang: "en" };
+const defaultClientContext = { tzo: -420, lang: "en" };
 
 function failAndThrow(msg: string): never {
     fail(msg);
@@ -35,7 +36,12 @@ class TestEnvironment implements Environment {
         });
     }
 
-    static test(name: string, outcomes: Outcomes | undefined, fn: (env: TestEnvironment) => void): void {
+    static test(
+        name: string,
+        outcomes: Outcomes | undefined,
+        clientContext: ClientContext,
+        fn: (env: TestEnvironment) => void
+    ): void {
         for (const allowStartExperiments of [false, true]) {
             for (const allowSetLocalStorage of [false, true]) {
                 for (const allowCompleteExperiments of [false, true]) {
@@ -45,6 +51,7 @@ class TestEnvironment implements Environment {
                     if (allowCompleteExperiments) withs.push("completeExperiments");
                     const env = new TestEnvironment(
                         outcomes,
+                        clientContext,
                         allowStartExperiments,
                         allowSetLocalStorage,
                         allowCompleteExperiments
@@ -56,6 +63,8 @@ class TestEnvironment implements Environment {
             }
         }
     }
+
+    private readonly clientContext: ClientContext;
 
     private maybeClient: Client | undefined;
 
@@ -70,10 +79,13 @@ class TestEnvironment implements Environment {
 
     constructor(
         private readonly outcomes: Outcomes | undefined,
+        clientContext: ClientContext,
         readonly allowStartExperiments: boolean,
         readonly allowSetLocalStorage: boolean,
         readonly allowCompleteExperiments: boolean
-    ) {}
+    ) {
+        this.clientContext = Object.assign({}, clientContext);
+    }
 
     setClient(client: Client): void {
         if (this.maybeClient !== undefined) {
@@ -111,11 +123,17 @@ class TestEnvironment implements Environment {
     }
 
     getTimeZoneOffset(): number {
-        return clientContext.tzo;
+        if (typeof this.clientContext.tzo !== "number") {
+            throw new Error("tzo must be a number");
+        }
+        return this.clientContext.tzo;
     }
 
     getLocalLanguage(): string | undefined {
-        return clientContext.lang;
+        if (this.clientContext.lang !== undefined && typeof this.clientContext.lang !== "string") {
+            throw new Error("lang must be undefined or a string");
+        }
+        return this.clientContext.lang;
     }
 
     http(
@@ -181,6 +199,30 @@ class TestEnvironment implements Environment {
     startHTMLExperiments(): void {
         this.htmlExperimentsStarted = true;
     }
+
+    checkStartExperiments(options: string[], pick: string, pickedBest: boolean | undefined): string {
+        const data = this.startExperimentsData;
+        if (typeof data !== "object" || data === null) {
+            return failAndThrow("Illegal startExperiments data");
+        }
+
+        expect(data.version).toBe(2);
+        expect(data.appKey).toBe(appKey);
+        expect(data.ctx).toEqual(this.clientContext);
+
+        expect(Object.getOwnPropertyNames(data.experiments)).toEqual([experimentName]);
+        const ex = data.experiments[experimentName];
+        if (!validateUUID(ex.instanceKey, 4)) {
+            fail("instanceKey is not a v4 UUID");
+        }
+        expect(ex.options).toEqual(options);
+        expect(ex.pick).toBe(pick);
+        if (pickedBest !== undefined) {
+            expect(ex.pickedBest).toBe(pickedBest);
+        }
+
+        return ex.instanceKey;
+    }
 }
 
 function makeOptions(n: number): string[] {
@@ -233,29 +275,6 @@ function checkState(localStorage: { [key: string]: string }, pick: string | unde
     }
 }
 
-function checkStartExperiments(data: any, options: string[], pick: string, pickedBest: boolean | undefined): string {
-    if (typeof data !== "object" || data === null) {
-        return failAndThrow("Illegal startExperiments data");
-    }
-
-    expect(data.version).toBe(2);
-    expect(data.appKey).toBe(appKey);
-    expect(data.ctx).toEqual(clientContext);
-
-    expect(Object.getOwnPropertyNames(data.experiments)).toEqual([experimentName]);
-    const ex = data.experiments[experimentName];
-    if (!validateUUID(ex.instanceKey, 4)) {
-        fail("instanceKey is not a v4 UUID");
-    }
-    expect(ex.options).toEqual(options);
-    expect(ex.pick).toBe(pick);
-    if (pickedBest !== undefined) {
-        expect(ex.pickedBest).toBe(pickedBest);
-    }
-
-    return ex.instanceKey;
-}
-
 function checkCompleteExperiments(data: any, instanceKey: string, pick: string, payoff: number): void {
     if (typeof data !== "object" || data === null) {
         return failAndThrow("Illegal completeExperiments data");
@@ -268,14 +287,14 @@ function checkCompleteExperiments(data: any, instanceKey: string, pick: string, 
     expect(data.experiments).toEqual(experiments);
 }
 
-TestEnvironment.test("can init when network fails", undefined, env => {
+TestEnvironment.test("can init when network fails", undefined, defaultClientContext, env => {
     checkInit(env);
     jest.advanceTimersByTime(200);
     expect(env.errors.length).toBeGreaterThan(0);
     expect(env.startExperimentsData).toBe(undefined);
 });
 
-TestEnvironment.test("can init with network", {}, env => {
+TestEnvironment.test("can init with network", {}, defaultClientContext, env => {
     checkInit(env);
     jest.advanceTimersByTime(200);
     if (env.allowSetLocalStorage) {
@@ -285,7 +304,7 @@ TestEnvironment.test("can init with network", {}, env => {
     expect(env.startExperimentsData).toBe(undefined);
 });
 
-TestEnvironment.test("can run experiment when network fails", undefined, env => {
+TestEnvironment.test("can run experiment when network fails", undefined, defaultClientContext, env => {
     checkInit(env);
     const options = makeOptions(2);
     const ex = env.getClient().experiment(experimentName, options);
@@ -294,10 +313,10 @@ TestEnvironment.test("can run experiment when network fails", undefined, env => 
     if (env.allowSetLocalStorage) {
         checkState(env.localStorage, ex.pick);
     }
-    checkStartExperiments(env.startExperimentsData, options, ex.pick, undefined);
+    env.checkStartExperiments(options, ex.pick, undefined);
 });
 
-TestEnvironment.test("single node", makeOutcomes(2, leaf(1)), env => {
+TestEnvironment.test("single node", makeOutcomes(2, leaf(1)), defaultClientContext, env => {
     checkInit(env);
     const ex = env.getClient().experiment(experimentName, env.getOptions());
     expect(ex.pick).toBe("o1");
@@ -305,12 +324,17 @@ TestEnvironment.test("single node", makeOutcomes(2, leaf(1)), env => {
     if (env.allowSetLocalStorage) {
         checkState(env.localStorage, "o1");
     }
-    checkStartExperiments(env.startExperimentsData, env.getOptions(), "o1", true);
+    env.checkStartExperiments(env.getOptions(), "o1", true);
 });
 
-function testTree(name: string, outcomes: Outcomes, pick: string): void {
+function testTree(
+    name: string,
+    outcomes: Outcomes,
+    pick: string,
+    clientContext: ClientContext = defaultClientContext
+): void {
     for (const complete of [false, true]) {
-        TestEnvironment.test(name + (complete ? " with completion" : ""), outcomes, env => {
+        TestEnvironment.test(name + (complete ? " with completion" : ""), outcomes, clientContext, env => {
             checkInit(env);
             const ex = env.getClient().experiment(experimentName, env.getOptions());
             expect(ex.pick).toBe(pick);
@@ -318,7 +342,7 @@ function testTree(name: string, outcomes: Outcomes, pick: string): void {
             if (env.allowSetLocalStorage) {
                 checkState(env.localStorage, pick);
             }
-            const instanceKey = checkStartExperiments(env.startExperimentsData, env.getOptions(), pick, true);
+            const instanceKey = env.checkStartExperiments(env.getOptions(), pick, true);
             if (complete) {
                 const callback = jest.fn();
                 env.getClient().completeDefaults(0.123, callback);
@@ -333,14 +357,17 @@ function testTree(name: string, outcomes: Outcomes, pick: string): void {
 testTree("branch on tzo left", makeOutcomes(3, tzoLt(-410, leaf(1), leaf(2))), "o1");
 testTree("branch on tzo right", makeOutcomes(3, tzoLt(-430, leaf(1), leaf(2))), "o2");
 
-testTree("branch on lang left", makeOutcomes(3, langEq("en", leaf(1), leaf(2))), "o1");
-testTree("branch on lang right", makeOutcomes(3, langEq("de", leaf(1), leaf(2))), "o2");
+testTree("branch on lang left", makeOutcomes(3, langEq(defaultClientContext.lang, leaf(1), leaf(2))), "o1");
+testTree("branch on lang right", makeOutcomes(3, langEq("not-" + defaultClientContext.lang, leaf(1), leaf(2))), "o2");
+
+testTree("branch on undefined lang left", makeOutcomes(3, langEq("null", leaf(1), leaf(2))), "o1", { tzo: 0 });
+testTree("branch on undefined lang right", makeOutcomes(3, langEq("not-null", leaf(1), leaf(2))), "o2", { tzo: 0 });
 
 // Missing tests:
 
-// undefined language works
-
 // Multiple experiments work
+
+// Random picking works (requires running independent instances)
 
 // Picks in local storage are honored if they're young
 
