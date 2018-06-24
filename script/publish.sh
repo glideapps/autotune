@@ -1,5 +1,10 @@
 #!/usr/bin/env bash
 
+if [ "x$BUILDKITE_BRANCH" != "xmaster" ] ; then
+    echo "Branch is $BUILDKITE_BRANCH, not master - not publishing"
+    exit
+fi
+
 echo "//registry.npmjs.org/:_authToken=$NPM_TOKEN" >> ~/.npmrc
 npm run bump-version
 npm publish
