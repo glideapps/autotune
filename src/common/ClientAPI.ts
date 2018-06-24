@@ -76,9 +76,9 @@ export function s3Url(path: string) {
 }
 
 export function outcomesUrl(appKey: string) {
-    return s3Url(`${appKey}.tree.json`);
+    return s3Url(`${appKey}.json`);
 }
 
 export function clientUrl(appKey: string) {
-    return s3Url(`${appKey}.tree.js`);
+    return s3Url(`${appKey}.js`);
 }

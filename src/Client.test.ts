@@ -145,7 +145,7 @@ class TestEnvironment implements Environment {
     ): void {
         // console.log(`${method} to ${url}`);
         setTimeout(() => {
-            if (method === "GET" && url.endsWith(`${appKey}.tree.json`)) {
+            if (method === "GET" && url.endsWith(`${appKey}.json`)) {
                 this.numOutcomesRequested += 1;
                 if (this.outcomes === undefined) {
                     reject(new Error("Simulated GET outcomes failure"));
