@@ -33,6 +33,7 @@
     "homepage": "https://github.com/quicktype/autotune#readme",
     "dependencies": {
         "aws-sdk": "^2.247.1",
+        "caesar-salad": "^1.0.1",
         "chalk": "^2.4.1",
         "jsonwebtoken": "^8.2.2",
         "moment": "^2.22.2",

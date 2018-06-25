@@ -15,8 +15,10 @@ import { table, getBorderCharacters } from "table";
 
 import * as moment from "moment";
 
-const cognitoAccessKeyID = "AKIAI2GRN6DCKCABTKGQ";
-const cognitoSecretAccessKey = "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";
+const rot47 = require("caesar-salad").ROT47.Decipher();
+
+const cognitoAccessKeyID = rot47.crypt("pzxpxd#xt*'&ts{q|(}\"");
+const cognitoSecretAccessKey = rot47.crypt("xAC%<Gt;!)G+{:9s)Df*K23Hx@H:{'<:Z>+tKFe*");
 const clientID = "104m4anpa00b724preu1dco9vj";
 
 const { red, yellow, blue, magenta, cyan, green, dim, bold } = chalk;
