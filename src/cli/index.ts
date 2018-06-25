@@ -21,7 +21,7 @@ const cognitoAccessKeyID = rot47.crypt("pzxpxd#xt*'&ts{q|(}\"");
 const cognitoSecretAccessKey = rot47.crypt("xAC%<Gt;!)G+{:9s)Df*K23Hx@H:{'<:Z>+tKFe*");
 const clientID = "104m4anpa00b724preu1dco9vj";
 
-const { red, yellow, blue, magenta, cyan, green, dim, bold } = chalk;
+const { red, yellow, blue, magenta, cyan, dim, bold } = chalk;
 
 const cognito = new CognitoIdentityServiceProvider({
     region: "us-east-2",
@@ -260,9 +260,9 @@ async function cmdCreateApp(_args: yargs.Arguments, name: string): Promise<void>
 }
 
 const graphQLQueryAll =
-    "query {\n    viewer {\n        username\n        applications {\n            name\n            key\n            experiments {\n                name\n                started\n                epsilon\n                options {\n                    name\n                    completed\n                    payoff\n                }\n            }\n        }\n    }\n}";
+    "query {\n    viewer {\n        username\n        applications {\n            name\n            key\n            experiments {\n                name\n                started\n                options {\n                    name\n                    completed\n                    payoff\n                }\n            }\n        }\n    }\n}";
 const graphQLQueryApplication =
-    "query($key: String!) {\n    getApplication(key: $key) {\n        name\n        key\n        experiments {\n            name\n            started\n            epsilon\n            options {\n                name\n                completed\n                payoff\n            }\n        }\n    }\n}";
+    "query($key: String!) {\n    getApplication(key: $key) {\n        name\n        key\n        experiments {\n            name\n            started\n            options {\n                name\n                completed\n                payoff\n            }\n        }\n    }\n}";
 
 async function queryGraphQL<T>(
     query: string,
@@ -308,24 +308,6 @@ async function listApps(_args: yargs.Arguments): Promise<void> {
     logTable([[bold("App Name"), bold("Key")], ...apps]);
 }
 
-const epsilonThresholds = [
-    {
-        max: 0.5,
-        color: green,
-        means: "autotune has determined the best option with high confidence"
-    },
-    {
-        max: 0.8,
-        color: yellow,
-        means: "autotune is learning and choices are improving"
-    },
-    {
-        max: Infinity,
-        color: red,
-        means: "autotune has little data and choices are mostly random"
-    }
-];
-
 async function cmdListExperiments(_args: yargs.Arguments, appKey: string): Promise<void> {
     const app = await getApp(appKey);
     if (app === null) {
@@ -334,9 +316,6 @@ async function cmdListExperiments(_args: yargs.Arguments, appKey: string): Promi
     for (const experiment of app.experiments) {
         const rows: any[] = [];
 
-        const epsilonRounded = Math.floor(experiment.epsilon * 100) / 100;
-        const epsilon = epsilonThresholds.find(e => epsilonRounded <= e.max)!;
-        const epsilonDisplay = epsilon.color(`epsilon = ${epsilonRounded}`);
         const ago = moment(experiment.started).fromNow();
         rows.push([bold(magenta(experiment.name)), `Since ${ago}`, "Conversion"]);
 
@@ -357,7 +336,6 @@ async function cmdListExperiments(_args: yargs.Arguments, appKey: string): Promi
             first = false;
         }
 
-        rows.push([epsilonDisplay, dim(epsilon.means), ""]);
         logTable(rows);
     }
 }
