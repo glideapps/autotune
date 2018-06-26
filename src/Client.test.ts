@@ -12,6 +12,12 @@ const appKey = "abcde";
 const experimentName = "ex";
 const defaultClientContext = { tzo: -420, lang: "en" };
 
+type TestSettings = {
+    outcomes?: Outcomes;
+    preloadOutcomes?: boolean;
+    clientContext: ClientContext;
+};
+
 function failAndThrow(msg: string): never {
     fail(msg);
     throw new Error(msg);
@@ -36,12 +42,7 @@ class TestEnvironment implements Environment {
         });
     }
 
-    static test(
-        name: string,
-        outcomes: Outcomes | undefined,
-        clientContext: ClientContext,
-        fn: (env: TestEnvironment) => void
-    ): void {
+    static test(name: string, settings: TestSettings, fn: (env: TestEnvironment) => void): void {
         for (const allowStartExperiments of [false, true]) {
             for (const allowSetLocalStorage of [false, true]) {
                 for (const allowCompleteExperiments of [false, true]) {
@@ -50,8 +51,8 @@ class TestEnvironment implements Environment {
                     if (allowSetLocalStorage) withs.push("local storage");
                     if (allowCompleteExperiments) withs.push("completeExperiments");
                     const env = new TestEnvironment(
-                        outcomes,
-                        clientContext,
+                        settings.outcomes,
+                        settings.clientContext,
                         allowStartExperiments,
                         allowSetLocalStorage,
                         allowCompleteExperiments
@@ -259,7 +260,6 @@ function langEq(v: string, l: Tree, r: Tree): Tree {
 
 function checkInit(env: TestEnvironment): void {
     expect(env.numOutcomesRequested).toBe(1);
-    expect(env.htmlExperimentsStarted).toBe(true);
 }
 
 function checkState(localStorage: { [key: string]: string }, pick: string | undefined): void {
@@ -292,14 +292,14 @@ function checkCompleteExperiments(data: any, instanceKey: string, pick: string, 
     expect(data.experiments).toEqual(experiments);
 }
 
-TestEnvironment.test("can init when network fails", undefined, defaultClientContext, env => {
+TestEnvironment.test("can init when network fails", { clientContext: defaultClientContext }, env => {
     checkInit(env);
     jest.advanceTimersByTime(200);
     expect(env.errors.length).toBeGreaterThan(0);
     expect(env.startExperimentsData).toBe(undefined);
 });
 
-TestEnvironment.test("can init with network", {}, defaultClientContext, env => {
+TestEnvironment.test("can init with network", { outcomes: {}, clientContext: defaultClientContext }, env => {
     checkInit(env);
     jest.advanceTimersByTime(200);
     if (env.allowSetLocalStorage) {
@@ -309,7 +309,18 @@ TestEnvironment.test("can init with network", {}, defaultClientContext, env => {
     expect(env.startExperimentsData).toBe(undefined);
 });
 
-TestEnvironment.test("can run experiment when network fails", undefined, defaultClientContext, env => {
+TestEnvironment.test(
+    "doesn't start HTML experiments or autocompletion when outcomes not preloaded",
+    { clientContext: defaultClientContext },
+    env => {
+        checkInit(env);
+        jest.advanceTimersByTime(200);
+        expect(env.htmlExperimentsStarted).toBe(false);
+        expect(env.autocompleteCalled).toBe(false);
+    }
+);
+
+TestEnvironment.test("can run experiment when network fails", { clientContext: defaultClientContext }, env => {
     checkInit(env);
     const options = makeOptions(2);
     const ex = env.getClient().experiment(experimentName, options);
@@ -321,16 +332,31 @@ TestEnvironment.test("can run experiment when network fails", undefined, default
     env.checkStartExperiments(options, ex.pick, undefined);
 });
 
-TestEnvironment.test("single node", makeOutcomes(2, leaf(1)), defaultClientContext, env => {
-    checkInit(env);
-    const ex = env.getClient().experiment(experimentName, env.getOptions());
-    expect(ex.pick).toBe("o1");
-    jest.advanceTimersByTime(200);
-    if (env.allowSetLocalStorage) {
-        checkState(env.localStorage, "o1");
-    }
-    env.checkStartExperiments(env.getOptions(), "o1", true);
+test("html experiments and autocompletions begin when outcomes preloaded", () => {
+    const preloadedOutcomes = {};
+
+    const env = new TestEnvironment({}, defaultClientContext, true, true, true);
+    const client = new Client(env, appKey, () => null, preloadedOutcomes);
+    env.setClient(client);
+
+    expect(env.htmlExperimentsStarted).toBe(true);
+    expect(env.autocompleteCalled).toBe(true);
 });
+
+TestEnvironment.test(
+    "single node",
+    { outcomes: makeOutcomes(2, leaf(1)), clientContext: defaultClientContext },
+    env => {
+        checkInit(env);
+        const ex = env.getClient().experiment(experimentName, env.getOptions());
+        expect(ex.pick).toBe("o1");
+        jest.advanceTimersByTime(200);
+        if (env.allowSetLocalStorage) {
+            checkState(env.localStorage, "o1");
+        }
+        env.checkStartExperiments(env.getOptions(), "o1", true);
+    }
+);
 
 function testTree(
     name: string,
@@ -339,7 +365,7 @@ function testTree(
     clientContext: ClientContext = defaultClientContext
 ): void {
     for (const complete of [false, true]) {
-        TestEnvironment.test(name + (complete ? " with completion" : ""), outcomes, clientContext, env => {
+        TestEnvironment.test(name + (complete ? " with completion" : ""), { outcomes, clientContext }, env => {
             checkInit(env);
             const ex = env.getClient().experiment(experimentName, env.getOptions());
             expect(ex.pick).toBe(pick);
