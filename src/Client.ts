@@ -35,6 +35,12 @@ export class Client {
     private queuedCompletedExperiments: { [name: string]: Experiment } = {};
     private queuedStartedExperiments: { [name: string]: Experiment } = {};
 
+    // The Client was preinitialized if outcomes were available ahead of time.
+    // For example, when outcomes are loaded with the client. We want to know this
+    // because we do some extra magic when preinitialized, like starting HTML
+    // experiments and autocompletion.
+    private preinitialized: boolean = false;
+
     constructor(
         private readonly environment: Environment,
         private readonly appKey: string,
@@ -42,6 +48,8 @@ export class Client {
         outcomes?: Outcomes
     ) {
         this.log("Initialize", appKey);
+
+        this.preinitialized = outcomes !== undefined;
 
         this.serialized = {
             lastInitialized: 0,
@@ -210,7 +218,10 @@ export class Client {
                 this.experimentOptions[name] = new ExperimentOptions(outcomes[name].options, option, epsilon);
             });
 
-            this.environment.startHTMLExperiments();
+            if (this.preinitialized) {
+                this.environment.startHTMLExperiments();
+                this.environment.autocomplete(payoff => this.completeDefaults(payoff, undefined));
+            }
         } catch (e) {
             this.error("Couldn't finish init", e);
         }

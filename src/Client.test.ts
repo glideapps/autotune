@@ -73,6 +73,7 @@ class TestEnvironment implements Environment {
 
     numOutcomesRequested: number = 0;
     htmlExperimentsStarted: boolean = false;
+    autocompleteCalled: boolean = false;
     startExperimentsData: any = undefined;
     completeExperimentsData: any = undefined;
     readonly localStorage: { [key: string]: string } = {};
@@ -198,6 +199,10 @@ class TestEnvironment implements Environment {
 
     startHTMLExperiments(): void {
         this.htmlExperimentsStarted = true;
+    }
+
+    autocomplete(complete: (payoff: number) => void): void {
+        this.autocompleteCalled = true;
     }
 
     checkStartExperiments(options: string[], pick: string, pickedBest: boolean | undefined): string {

@@ -17,4 +17,6 @@ export interface Environment {
     setLocalStorage(key: string, value: string): void;
 
     startHTMLExperiments(): void;
+
+    autocomplete(complete: (payoff: number) => void): void;
 }

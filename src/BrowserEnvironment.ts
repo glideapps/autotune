@@ -82,4 +82,10 @@ export class BrowserEnvironment implements Environment {
     startHTMLExperiments(): void {
         startHTMLExperiments();
     }
+
+    autocomplete(complete: (payoff: number) => void): void {
+        for (const [delay, reward] of [[10, 0.1], [60, 0.2]]) {
+            setTimeout(() => complete(reward), delay * 1000);
+        }
+    }
 }
