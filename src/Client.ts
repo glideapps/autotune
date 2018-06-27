@@ -18,11 +18,7 @@ export function apiURL(path: string) {
 }
 
 export class ExperimentOptions {
-    constructor(
-        readonly optionNames: string[],
-        readonly bestOption: string | undefined = undefined,
-        readonly epsilon: number = 1
-    ) {}
+    constructor(readonly bestOption: string | undefined = undefined, readonly epsilon: number = 1) {}
 }
 
 export type CompletionCallback = () => void;
@@ -134,7 +130,7 @@ export class Client {
     private startExperimentsDebounced = debounce(() => {
         let experiments = mapObject(this.queuedStartedExperiments, e => ({
             instanceKey: e.key,
-            options: e.options.optionNames,
+            options: e.optionNames,
             pick: e.pick,
             pickedBest: e.pickedBest
         }));
@@ -215,7 +211,7 @@ export class Client {
                 if (this.experimentOptions[name] !== undefined) return;
 
                 const { option, epsilon } = lookupBestOption(ctx, outcomes[name]);
-                this.experimentOptions[name] = new ExperimentOptions(outcomes[name].options, option, epsilon);
+                this.experimentOptions[name] = new ExperimentOptions(option, epsilon);
             });
 
             if (this.preinitialized) {
@@ -232,9 +228,10 @@ export class Client {
         if (ex !== undefined) return ex;
         let options = this.experimentOptions[name];
         if (options === undefined) {
-            options = this.experimentOptions[name] = new ExperimentOptions(optionNames);
+            options = this.experimentOptions[name] = new ExperimentOptions();
         }
-        ex = this.experiments[name] = new Experiment(this, name, options);
+        ex = this.experiments[name] = new Experiment(this, name, optionNames, options);
+
         this.defaultCompletions[name] = ex;
         this.startExperiment(ex);
         return ex;
@@ -262,10 +259,15 @@ export class Experiment {
 
     payoff?: number;
 
-    constructor(private readonly client: Client, readonly name: string, readonly options: ExperimentOptions) {
+    constructor(
+        private readonly client: Client,
+        readonly name: string,
+        readonly optionNames: string[],
+        readonly options: ExperimentOptions
+    ) {
         this.key = uuidv4();
 
-        const { optionNames, bestOption, epsilon } = this.options;
+        const { bestOption, epsilon } = this.options;
 
         const savedPick = this.client.loadPick(this.name);
         if (savedPick !== undefined && optionNames.indexOf(savedPick) !== -1) {
