@@ -41,6 +41,7 @@
         "request": "^2.87.0",
         "request-promise": "^4.2.2",
         "table": "^4.0.3",
+        "update-notifier": "^2.5.0",
         "yargs": "^11.0.0"
     },
     "devDependencies": {
@@ -51,6 +52,7 @@
         "@types/request-promise": "^4.1.41",
         "@types/shelljs": "^0.8.0",
         "@types/table": "^4.0.5",
+        "@types/update-notifier": "^2.2.0",
         "@types/uuid-validate": "0.0.0",
         "@types/yargs": "^11.0.0",
         "browserify": "^16.2.2",

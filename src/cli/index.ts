@@ -6,6 +6,7 @@ import * as yargs from "yargs";
 import * as storage from "node-persist";
 import { CognitoIdentityServiceProvider } from "aws-sdk";
 import { decode } from "jsonwebtoken";
+import * as updateNotifier from "update-notifier";
 
 import { CreateAppKeyRequest, CreateAppKeyResponse, clientUrl } from "../common/ClientAPI";
 import { User, Application } from "./Query";
@@ -344,6 +345,14 @@ async function graphQL(_args: yargs.Arguments): Promise<void> {
     console.log(JSON.stringify(await queryGraphQL<User>(graphQLQueryAll, "viewer"), undefined, 4));
 }
 
+function notifyIfCLIUpdatesAvailable() {
+    try {
+        const pkg = require("../../package.json");
+        const notifier = updateNotifier({ pkg });
+        notifier.notify();
+    } catch (e) {}
+}
+
 async function main(): Promise<void> {
     let didSomething = false;
 
@@ -406,6 +415,7 @@ async function main(): Promise<void> {
         }
         yargs.showHelp();
     }
+    notifyIfCLIUpdatesAvailable();
 }
 
 function logTable(rows: any[], style: "void" | "norc" = "norc") {
