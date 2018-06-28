@@ -72,7 +72,7 @@ export type CreateAppKeyResponse = {
 };
 
 export function s3Url(path: string) {
-    return `https://js.autotune.xyz/${path}`;
+    return `https://s3.us-east-2.amazonaws.com/js.autotune.xyz/${path}`;
 }
 
 export function outcomesUrl(appKey: string) {
