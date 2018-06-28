@@ -1,11 +1,5 @@
-import { homedir } from "os";
-import * as path from "path";
-
 import * as request from "request-promise";
 import * as yargs from "yargs";
-import * as storage from "node-persist";
-import { CognitoIdentityServiceProvider } from "aws-sdk";
-import { decode } from "jsonwebtoken";
 import * as updateNotifier from "update-notifier";
 
 import { CreateAppKeyRequest, CreateAppKeyResponse, clientUrl } from "../common/ClientAPI";
@@ -15,61 +9,17 @@ import chalk from "chalk";
 import { table, getBorderCharacters } from "table";
 
 import * as moment from "moment";
-
-const rot47 = require("caesar-salad").ROT47.Decipher();
-
-const cognitoAccessKeyID = rot47.crypt("pzxpxd#xt*'&ts{q|(}\"");
-const cognitoSecretAccessKey = rot47.crypt("xAC%<Gt;!)G+{:9s)Df*K23Hx@H:{'<:Z>+tKFe*");
-const clientID = "104m4anpa00b724preu1dco9vj";
+import {
+    tryGetUserInfo,
+    setUserInfo,
+    getUserInfo,
+    getIDToken,
+    cognito,
+    clientID,
+    authenticate
+} from "./Authentication";
 
 const { red, yellow, blue, magenta, cyan, dim, bold } = chalk;
-
-const cognito = new CognitoIdentityServiceProvider({
-    region: "us-east-2",
-    accessKeyId: cognitoAccessKeyID,
-    secretAccessKey: cognitoSecretAccessKey
-});
-
-type AuthTokens = {
-    accessToken: string;
-    refreshToken: string;
-    idToken: string;
-};
-
-type UserInfo = {
-    username: string;
-    password?: string;
-    tokens?: AuthTokens;
-};
-
-let storageInited = false;
-
-async function initStorage(): Promise<void> {
-    if (storageInited) return;
-    await storage.init({ dir: path.join(homedir(), ".autotune") });
-}
-
-const userInfoKey = "userInfo";
-
-async function tryGetUserInfo(): Promise<UserInfo | undefined> {
-    await initStorage();
-    return await storage.getItem(userInfoKey);
-}
-
-async function getUserInfo(): Promise<UserInfo> {
-    const userInfo = await tryGetUserInfo();
-    if (userInfo === undefined) {
-        console.error('You\'re not logged in :-(.  Please use "login" to log in');
-        console.error('or "signup" to sign up, if you haven\'t done so already.');
-        return process.exit(1);
-    }
-    return userInfo;
-}
-
-async function setUserInfo(info: UserInfo): Promise<void> {
-    await initStorage();
-    await storage.setItem(userInfoKey, info);
-}
 
 async function cmdSignup(_args: yargs.Arguments, email: string, password: string): Promise<void> {
     let response;
@@ -144,44 +94,6 @@ async function cmdConfirm(_args: yargs.Arguments, email: string | undefined, cod
     }
 }
 
-async function authenticate(
-    username: string,
-    flow: string,
-    parameters: CognitoIdentityServiceProvider.AuthParametersType,
-    refreshToken?: string
-): Promise<AuthTokens> {
-    const response = await cognito
-        .initiateAuth({
-            ClientId: clientID,
-            AuthFlow: flow,
-            AuthParameters: parameters
-        })
-        .promise();
-
-    if (
-        response.AuthenticationResult === undefined ||
-        typeof response.AuthenticationResult!.AccessToken !== "string" ||
-        typeof response.AuthenticationResult!.IdToken !== "string" ||
-        (refreshToken === undefined && typeof response.AuthenticationResult!.RefreshToken !== "string")
-    ) {
-        throw new Error(`Could not authenticate: ${JSON.stringify(response)}`);
-    }
-
-    if (refreshToken === undefined) {
-        refreshToken = response.AuthenticationResult!.RefreshToken!;
-    }
-
-    const tokens: AuthTokens = {
-        accessToken: response.AuthenticationResult!.AccessToken!,
-        refreshToken,
-        idToken: response.AuthenticationResult!.IdToken!
-    };
-
-    await setUserInfo({ username, tokens });
-
-    return tokens;
-}
-
 async function authenticateWithPassword(email: string, password: string): Promise<void> {
     await authenticate(email, "USER_PASSWORD_AUTH", {
         USERNAME: email,
@@ -195,30 +107,10 @@ async function cmdLogin(_args: yargs.Arguments, email: string, password: string)
 }
 
 async function makeAuthHeaders(): Promise<{ [name: string]: string }> {
-    const userInfo = await getUserInfo();
-    let tokens = userInfo.tokens;
-    if (tokens === undefined) {
-        console.error("Please log in and confirm your account first");
-        return process.exit(1);
-    }
-    const decodedToken = decode(tokens.idToken);
-    if (typeof decodedToken === "object" && decodedToken !== null && typeof decodedToken.exp === "number") {
-        if (decodedToken.exp <= Date.now() / 1000 + 5) {
-            // Token will be expired in 5 seconds - try to refresh
-            tokens = await authenticate(
-                userInfo.username,
-                "REFRESH_TOKEN_AUTH",
-                {
-                    REFRESH_TOKEN: tokens.refreshToken
-                },
-                tokens.refreshToken
-            );
-        }
-    }
     return {
         "Cache-Control": "no-cache",
         "Content-Type": "application/json",
-        Authorization: tokens.idToken
+        Authorization: await getIDToken()
     };
 }
 
