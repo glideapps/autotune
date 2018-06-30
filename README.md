@@ -1,3 +1,5 @@
+![](logo.svg)
+
 # Autotune: automatically tune your apps to improve outcomes
 
 A/B testing is critical to optimizing any app, but implementing tests and analyzing results can be awkward and time-consuming.
