@@ -1,7 +1,7 @@
 // tslint:disable strict-boolean-expressions
 
 import { oneOf, complete } from ".";
-import { map, each, hash } from "./util";
+import { map, each, hash, unique } from "./util";
 
 type AttributeExperiments = {
     [name: string]: {
@@ -24,8 +24,24 @@ type ClassExperiments = {
     };
 };
 
-function optionNodeLabelOrText(node: Element): string {
-    return node.getAttribute("option") || hash(node.outerHTML).toString();
+export function optionNodeLabelOrText(
+    node: Element,
+    allowTextContent: "allow textContent" | "no textContent" = "allow textContent"
+): string {
+    return (
+        node.getAttribute("data-option") ||
+        node.getAttribute("option") ||
+        (allowTextContent ? node.textContent : undefined) ||
+        hash(node.outerHTML).toString()
+    );
+}
+
+export function optionsForNodeChildren(children: HTMLCollection): string[] {
+    let options = unique(map(children, c => optionNodeLabelOrText(c)));
+    if (options.length !== children.length) {
+        options = map(children, c => optionNodeLabelOrText(c, "no textContent"));
+    }
+    return options;
 }
 
 // Gather tag-based experiments like:
@@ -48,10 +64,11 @@ function getTagExperiments(): TagExperiments {
     const customTagNodes = document.getElementsByTagName("autotune");
     each(customTagNodes, node => {
         const name =
+            node.getAttribute("data-experiment") ||
             node.getAttribute("experiment") ||
             // We use the hash of the experiment's HTML content if no name is provided
             hash(node.innerHTML).toString();
-        const data = { node, options: map(node.children, optionNodeLabelOrText) };
+        const data = { node, options: optionsForNodeChildren(node.children) };
         const list = experiments[name] || [];
         list.push(data);
         experiments[name] = list;

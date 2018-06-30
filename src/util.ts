@@ -11,6 +11,14 @@ export function getOwnPropertyValues<T>(x: { [name: string]: T }): T[] {
     return Object.getOwnPropertyNames(x).map(n => x[n]);
 }
 
+export function unique(xs: string[]): string[] {
+    const o: any = {};
+    for (const x of xs) {
+        o[x] = x;
+    }
+    return getOwnPropertyValues(o);
+}
+
 export function mapObject<T, S>(x: { [name: string]: T }, f: (v: T, k: string) => S): { [name: string]: S } {
     let result: { [name: string]: S } = {};
     Object.getOwnPropertyNames(x).forEach(n => (result[n] = f(x[n], n)));
