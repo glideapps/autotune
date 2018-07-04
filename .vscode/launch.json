@@ -1,0 +1,15 @@
+{
+    // Use IntelliSense to learn about possible attributes.
+    // Hover to view descriptions of existing attributes.
+    // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "type": "node",
+            "request": "launch",
+            "name": "Launch CLI without building",
+            "program": "${workspaceFolder}/dist/cli/index.js",
+            "args": ["ls", "7c958171-2a72-4cfe-ae6a-5d12f087db2f"]
+        }
+    ]
+}
