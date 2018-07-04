@@ -1,8 +1,8 @@
-import * as request from "request-promise";
+import * as request from "request-promise-native";
 import * as yargs from "yargs";
 import * as updateNotifier from "update-notifier";
 
-import { CreateAppKeyRequest, CreateAppKeyResponse, clientUrl } from "../common/ClientAPI";
+import { CreateAppKeyRequest, CreateAppKeyResponse, clientUrl, outcomesUrl } from "../common/ClientAPI";
 import { User, Application } from "./Query";
 
 import chalk from "chalk";
@@ -18,6 +18,9 @@ import {
     clientID,
     authenticate
 } from "./Authentication";
+import { Outcome, Tree } from "../common/ClientConfig";
+
+const treeify = require("treeify");
 
 const { red, yellow, blue, magenta, cyan, dim, bold } = chalk;
 
@@ -128,10 +131,7 @@ async function requestWithAuth<T>(endpoint: string, body: T): Promise<any> {
         body,
         json: true
     };
-
-    /* tslint:disable:await-promise */
-    return await request(requestOptions);
-    /* tslint:enable */
+    return await request(requestOptions).promise();
 }
 
 async function createApp(name: string): Promise<string> {
@@ -176,7 +176,7 @@ async function queryGraphQL<T>(
     return result.data[queryName] as T;
 }
 
-async function getApp(keyOrName: string): Promise<Application | null> {
+async function getApp(keyOrName: string): Promise<Application | undefined> {
     const isUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(keyOrName);
 
     if (isUUID) {
@@ -184,13 +184,12 @@ async function getApp(keyOrName: string): Promise<Application | null> {
             key: keyOrName
         });
         if (app !== null) return app;
-    } else {
-        const user = await queryGraphQL<User>(graphQLQueryAll, "viewer");
-        const app = user.applications.find(a => a.name === keyOrName);
-        if (app !== undefined) return app;
     }
 
-    return null;
+    // If the it's a UUID it could still be a name - the user might use
+    // UUIDs as app names.
+    const user = await queryGraphQL<User>(graphQLQueryAll, "viewer");
+    return user.applications.find(a => a.name === keyOrName);
 }
 
 async function listApps(_args: yargs.Arguments): Promise<void> {
@@ -203,7 +202,7 @@ async function listApps(_args: yargs.Arguments): Promise<void> {
 
 async function cmdListExperiments(_args: yargs.Arguments, appKey: string): Promise<void> {
     const app = await getApp(appKey);
-    if (app === null) {
+    if (app === undefined) {
         throw new Error("Application not found");
     }
     for (const experiment of app.experiments) {
@@ -230,6 +229,42 @@ async function cmdListExperiments(_args: yargs.Arguments, appKey: string): Promi
         }
 
         logTable(rows);
+    }
+}
+
+type PrintTree = string | { [name: string]: PrintTree };
+
+function makePrintTree(outcome: Outcome): PrintTree {
+    const options = outcome.options;
+
+    function convert(t: Tree): any {
+        if (t.best !== undefined) {
+            return `${bold(options[t.best])} - epsilon: ${t.eps}`;
+        }
+        const { op, neg } = t.op === "lt" ? { op: "<", neg: ">=" } : { op: "=", neg: "!=" };
+        const result: PrintTree = {};
+        result[`${t.at} ${op} ${t.v}`] = convert(t.l!);
+        result[`${t.at} ${neg} ${t.v}`] = convert(t.r!);
+        return result;
+    }
+
+    return convert(outcome.tree);
+}
+
+async function cmdShowTrees(appKey: string): Promise<void> {
+    const app = await getApp(appKey);
+    if (app === undefined) {
+        throw new Error("Application not found");
+    }
+    const requestOptions = {
+        method: "GET",
+        url: outcomesUrl(app.key),
+        json: true
+    };
+    const outcomes: { [key: string]: Outcome } = await request(requestOptions).promise();
+    for (const experimentKey of Object.getOwnPropertyNames(outcomes)) {
+        console.log(bold(magenta(experimentKey)));
+        console.log(treeify.asTree(makePrintTree(outcomes[experimentKey]), true));
     }
 }
 
@@ -293,6 +328,12 @@ async function main(): Promise<void> {
                     cmd(listApps(args));
                 }
             }
+        )
+        .command(
+            "trees <key|name>",
+            dim("Show decision trees for experiments in an app"),
+            ya => ya.positional("key", { type: "string" }),
+            args => cmd(cmdShowTrees(args.key))
         )
         .command("graphql", false, {}, args => cmd(graphQL(args)))
         .wrap(yargs.terminalWidth()).argv;
