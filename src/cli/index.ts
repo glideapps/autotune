@@ -310,7 +310,18 @@ async function main(): Promise<void> {
     notifyIfCLIUpdatesAvailable();
 }
 
+function removeWhitespace(data: any): any {
+    if (Array.isArray(data)) {
+        return data.map(removeWhitespace);
+    }
+    if (typeof data === "string") {
+        return data.replace(/\s+/g, " ").trim();
+    }
+    return data;
+}
+
 function logTable(rows: any[], style: "void" | "norc" = "norc") {
+    rows = removeWhitespace(rows);
     console.log(
         table(rows, {
             border: getBorderCharacters(style)
