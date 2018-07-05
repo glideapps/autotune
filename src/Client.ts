@@ -13,9 +13,12 @@ export type Outcomes = { [experimentKey: string]: Outcome };
 
 const SESSION_EXPIRES_AFTER = 24 /* hours */ * (60 * 60 * 1000) /* milliseconds/ hour */;
 
-export function apiURL(path: string) {
+function apiURL(path: string) {
     return `https://2vyiuehl9j.execute-api.us-east-2.amazonaws.com/prod/${path}`;
 }
+
+export const startExperimentsURL = apiURL("startExperiments");
+export const completeExperimentsURL = apiURL("completeExperiments");
 
 export class ExperimentOptions {
     constructor(readonly bestOption: string | undefined = undefined, readonly epsilon: number = 1) {}
@@ -147,7 +150,7 @@ export class Client {
         };
         this.environment.http(
             "POST",
-            apiURL("startExperiments"),
+            startExperimentsURL,
             data,
             () => {
                 return;
@@ -183,7 +186,7 @@ export class Client {
 
         this.environment.http(
             "POST",
-            apiURL("completeExperiments"),
+            completeExperimentsURL,
             {
                 version: 1,
                 appKey: this.appKey,

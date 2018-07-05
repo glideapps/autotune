@@ -1,4 +1,4 @@
-import { Client, Outcomes, apiURL } from "./Client";
+import { Client, Outcomes, startExperimentsURL, completeExperimentsURL } from "./Client";
 import { Environment } from "./Environment";
 import { Tree, Op } from "./common/ClientConfig";
 import { Convert } from "./common/models";
@@ -154,7 +154,7 @@ class TestEnvironment implements Environment {
                 } else {
                     resolve(this.outcomes);
                 }
-            } else if (method === "POST" && url === apiURL("startExperiments")) {
+            } else if (method === "POST" && url === startExperimentsURL) {
                 if (data === undefined) {
                     return failAndThrow("No data given for startExperiments");
                 }
@@ -167,7 +167,7 @@ class TestEnvironment implements Environment {
                 } else {
                     reject(new Error("Simulated POST startExperiments failure"));
                 }
-            } else if (method === "POST" && url === apiURL("completeExperiments")) {
+            } else if (method === "POST" && url === completeExperimentsURL) {
                 if (data === undefined) {
                     return failAndThrow("No data given for completeExperiments");
                 }
