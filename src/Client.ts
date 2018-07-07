@@ -1,4 +1,11 @@
-import { CompleteExperimentsRequest, outcomesUrl, ClientContext, StartExperimentsRequest } from "./common/ClientAPI";
+import {
+    CompleteExperimentsRequest,
+    outcomesUrl,
+    ClientContext,
+    StartExperimentsRequest,
+    startExperimentsURL,
+    completeExperimentsURL
+} from "./common/ClientAPI";
 import { Outcome } from "./common/ClientConfig";
 
 import { Convert, SerializedState } from "./common/models";
@@ -12,13 +19,6 @@ import { lookupBestOption } from "./DecisionTree";
 export type Outcomes = { [experimentKey: string]: Outcome };
 
 const SESSION_EXPIRES_AFTER = 24 /* hours */ * (60 * 60 * 1000) /* milliseconds/ hour */;
-
-function apiURL(path: string) {
-    return `https://2vyiuehl9j.execute-api.us-east-2.amazonaws.com/prod/${path}`;
-}
-
-export const startExperimentsURL = apiURL("startExperiments");
-export const completeExperimentsURL = apiURL("completeExperiments");
 
 export class ExperimentOptions {
     constructor(readonly bestOption: string | undefined = undefined, readonly epsilon: number = 1) {}

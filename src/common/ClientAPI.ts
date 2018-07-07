@@ -82,3 +82,10 @@ export function outcomesUrl(appKey: string) {
 export function clientUrl(appKey: string) {
     return s3Url(`${appKey}.js`);
 }
+
+function apiURL(path: string) {
+    return `https://2vyiuehl9j.execute-api.us-east-2.amazonaws.com/prod/${path}`;
+}
+
+export const startExperimentsURL = apiURL("startExperiments");
+export const completeExperimentsURL = apiURL("completeExperiments");

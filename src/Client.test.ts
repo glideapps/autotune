@@ -1,10 +1,10 @@
-import { Client, Outcomes, startExperimentsURL, completeExperimentsURL } from "./Client";
+import { Client, Outcomes } from "./Client";
 import { Environment } from "./Environment";
 import { Tree, Op } from "./common/ClientConfig";
 import { Convert } from "./common/models";
 
 import * as validateUUID from "uuid-validate";
-import { ClientContext } from "./common/ClientAPI";
+import { ClientContext, completeExperimentsURL, startExperimentsURL } from "./common/ClientAPI";
 
 jest.useFakeTimers();
 
