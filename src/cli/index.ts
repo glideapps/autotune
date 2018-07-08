@@ -205,6 +205,12 @@ async function cmdListExperiments(_args: yargs.Arguments, appKey: string): Promi
     if (app === undefined) {
         throw new Error("Application not found");
     }
+
+    if (app.experiments.length === 0) {
+        console.log("Experiments for app not found. Data is processed in batches and may take a while to be ready. Please try again later.");
+        return;
+    }
+
     for (const experiment of app.experiments) {
         const rows: any[] = [];
 
