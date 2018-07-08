@@ -71,6 +71,18 @@ export type CreateAppKeyResponse = {
     appKey: string;
 };
 
+// POST to https://2vyiuehl9j.execute-api.us-east-2.amazonaws.com/prod/deleteAppKey
+
+export type DeleteAppKeyRequest = {
+    appKey: string;
+};
+
+export type DeleteAppKeyResponse = {
+    // FIXME: remove these two
+    username: string;
+    appKey: string;
+};
+
 export function s3Url(path: string) {
     return `https://s3.us-east-2.amazonaws.com/js.autotune.xyz/${path}`;
 }
