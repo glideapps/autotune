@@ -207,7 +207,9 @@ async function cmdListExperiments(_args: yargs.Arguments, appKey: string): Promi
     }
 
     if (app.experiments.length === 0) {
-        console.log("Experiments for app not found. Data is processed in batches and may take a while to be ready. Please try again later.");
+        console.log(
+            "Experiments for app not found. Data is processed in batches and may take a while to be ready. Please try again later."
+        );
         return;
     }
 
@@ -371,7 +373,10 @@ function logTable(rows: any[], style: "void" | "norc" = "norc") {
     rows = removeWhitespace(rows);
     console.log(
         table(rows, {
-            border: getBorderCharacters(style)
+            border: getBorderCharacters(style),
+            columnDefault: {
+                truncate: 60
+            }
         })
     );
 }
