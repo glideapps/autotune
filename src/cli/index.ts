@@ -1,3 +1,4 @@
+import * as fs from "fs";
 import * as request from "request-promise-native";
 import * as yargs from "yargs";
 import * as updateNotifier from "update-notifier";
@@ -260,16 +261,23 @@ function makePrintTree(outcome: Outcome): PrintTree {
 }
 
 async function cmdShowTrees(appKey: string): Promise<void> {
-    const app = await getApp(appKey);
-    if (app === undefined) {
+    let outcomes: { [key: string]: Outcome };
+    let app: Application | undefined = undefined;
+    try {
+        app = await getApp(appKey);
+    } catch {}
+    if (app !== undefined) {
+        const requestOptions = {
+            method: "GET",
+            url: outcomesUrl(app.key),
+            json: true
+        };
+        outcomes = await request(requestOptions).promise();
+    } else if (fs.existsSync(appKey)) {
+        outcomes = JSON.parse(fs.readFileSync(appKey, "utf-8"));
+    } else {
         throw new Error("Application not found");
     }
-    const requestOptions = {
-        method: "GET",
-        url: outcomesUrl(app.key),
-        json: true
-    };
-    const outcomes: { [key: string]: Outcome } = await request(requestOptions).promise();
     for (const experimentKey of Object.getOwnPropertyNames(outcomes)) {
         console.log(bold(magenta(experimentKey)));
         console.log(treeify.asTree(makePrintTree(outcomes[experimentKey]), true));
@@ -338,7 +346,7 @@ async function main(): Promise<void> {
             }
         )
         .command(
-            "trees <key|name>",
+            "trees <key|name|filename>",
             dim("Show decision trees for experiments in an app"),
             ya => ya.positional("key", { type: "string" }),
             args => cmd(cmdShowTrees(args.key))
