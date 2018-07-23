@@ -1,3 +1,5 @@
+import { ExperimentCounts } from "./ExperimentCounts";
+
 export type ClientContext = { [key: string]: string | number };
 
 // POST to https://2vyiuehl9j.execute-api.us-east-2.amazonaws.com/prod/startExperiments
@@ -82,6 +84,14 @@ export type DeleteAppKeyResponse = {
     username: string;
     appKey: string;
 };
+
+// POST to https://2vyiuehl9j.execute-api.us-east-2.amazonaws.com/getCounts
+
+export type GetCountsRequest = {
+    appKey: string;
+};
+
+export type GetCountsResponse = { [key: string]: ExperimentCounts };
 
 export function s3Url(path: string) {
     return `https://s3.us-east-2.amazonaws.com/js.autotune.xyz/${path}`;

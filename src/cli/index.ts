@@ -3,7 +3,13 @@ import * as request from "request-promise-native";
 import * as yargs from "yargs";
 import * as updateNotifier from "update-notifier";
 
-import { CreateAppKeyRequest, CreateAppKeyResponse, clientUrl, outcomesUrl } from "../common/ClientAPI";
+import {
+    CreateAppKeyRequest,
+    CreateAppKeyResponse,
+    clientUrl,
+    outcomesUrl,
+    GetCountsRequest
+} from "../common/ClientAPI";
 import { User, Application } from "./Query";
 
 import chalk from "chalk";
@@ -20,6 +26,8 @@ import {
     authenticate
 } from "./Authentication";
 import { Outcome, Tree } from "../common/ClientConfig";
+import { Count, Convert as ConvertExperimentCounts, ExperimentCounts } from "../common/ExperimentCounts";
+import { lookupBestOption } from "../DecisionTree";
 
 const treeify = require("treeify");
 
@@ -260,27 +268,208 @@ function makePrintTree(outcome: Outcome): PrintTree {
     return convert(outcome.tree);
 }
 
-async function cmdShowTrees(appKey: string): Promise<void> {
+async function getOutcomesForApp(app: Application): Promise<{ [key: string]: Outcome }> {
+    const requestOptions = {
+        method: "GET",
+        url: outcomesUrl(app.key),
+        json: true
+    };
+    return await request(requestOptions).promise();
+}
+
+async function getOutcomesForAppKeyOrFilename(appKey: string): Promise<{ [key: string]: Outcome }> {
     let outcomes: { [key: string]: Outcome };
     let app: Application | undefined = undefined;
     try {
         app = await getApp(appKey);
     } catch {}
     if (app !== undefined) {
-        const requestOptions = {
-            method: "GET",
-            url: outcomesUrl(app.key),
-            json: true
-        };
-        outcomes = await request(requestOptions).promise();
+        outcomes = await getOutcomesForApp(app);
     } else if (fs.existsSync(appKey)) {
         outcomes = JSON.parse(fs.readFileSync(appKey, "utf-8"));
     } else {
         throw new Error("Application not found");
     }
+    return outcomes;
+}
+
+async function cmdShowTrees(appKey: string): Promise<void> {
+    const outcomes = await getOutcomesForAppKeyOrFilename(appKey);
+
     for (const experimentKey of Object.getOwnPropertyNames(outcomes)) {
         console.log(bold(magenta(experimentKey)));
         console.log(treeify.asTree(makePrintTree(outcomes[experimentKey]), true));
+    }
+}
+
+type PickedCounts = {
+    [experiment: string]: {
+        [pick: string]: {
+            best: Count;
+            others: { [pick: string]: Count };
+        };
+    };
+};
+
+function relativePayoffForCount(c: Count): number {
+    return c.payoff / c.completed;
+}
+
+function formatPercentage(p: number, decimalPlaces: number): string {
+    return `${(p * 100).toFixed(decimalPlaces)}%`;
+}
+
+async function getCountsForApp(app: Application): Promise<{ [key: string]: ExperimentCounts }> {
+    const body: GetCountsRequest = { appKey: app.key };
+    const result = await requestWithAuth("getCounts", body);
+    return result as { [key: string]: ExperimentCounts };
+}
+
+async function cmdShowStats(appKey: string, alternatives: boolean): Promise<void> {
+    const app = await getApp(appKey);
+    if (app === undefined) {
+        throw new Error(`App ${appKey} does not exist`);
+    }
+    const outcomes = await getOutcomesForApp(app);
+    const counts = await getCountsForApp(app);
+
+    const countsByPick: PickedCounts = {};
+    for (const experiment of Object.getOwnPropertyNames(counts)) {
+        const outcome = outcomes[experiment];
+        if (outcome === undefined) continue;
+
+        const cts = counts[experiment];
+
+        const optionNames = new Set<string>();
+        for (const d of cts.data) {
+            for (const option of Object.getOwnPropertyNames(d.counts)) {
+                optionNames.add(option);
+            }
+        }
+
+        countsByPick[experiment] = {};
+        for (const d of cts.data) {
+            const pick = lookupBestOption(d.clientContext as any, outcome).option;
+            if (pick === undefined) {
+                console.log("no best option found");
+                continue;
+            }
+            let c = countsByPick[experiment][pick];
+            if (c === undefined) {
+                c = { best: { completed: 0, payoff: 0 }, others: {} };
+                countsByPick[experiment][pick] = c;
+            }
+
+            const othersCount = (option: string): Count => {
+                if (c.others[option] === undefined) {
+                    c.others[option] = { completed: 0, payoff: 0 };
+                }
+                return c.others[option];
+            };
+
+            const pickCounts = d.counts[pick];
+            if (pickCounts === undefined || pickCounts === null) {
+                const keys = Object.getOwnPropertyNames(d.counts);
+                let totalPayoff = 0;
+                for (const k of keys) {
+                    const ck = d.counts[k];
+                    if (ck === null) continue;
+                    totalPayoff += ck.payoff;
+                }
+                if (totalPayoff === 0) {
+                    continue;
+                }
+                // console.log(`we have counts for ${JSON.stringify(keys)}`);
+                // console.log(`best pick ${pick} is not in counts for ${contextString}`);
+                continue;
+                // throw new Error(`best pick ${pick} is not in counts for ${contextString}`);
+            }
+            const relativePayoffForPick = relativePayoffForCount(pickCounts);
+
+            c.best.completed += pickCounts.completed;
+            c.best.payoff += pickCounts.payoff;
+
+            const optionsSet = new Set<string>();
+            let minPayoff = relativePayoffForPick;
+            for (const option of Object.getOwnPropertyNames(d.counts)) {
+                const countsForOption = d.counts[option];
+                if (countsForOption === null) continue;
+
+                optionsSet.add(option);
+
+                const relativePayoff = relativePayoffForCount(countsForOption);
+
+                /*
+                console.log(
+                    `best: ${option === pick} ${countsForOption.completed} in ${contextString} - ${relativePayoff *
+                        100} ${option}`
+                );
+                */
+
+                if (option === pick) {
+                    continue;
+                }
+
+                /*
+                if (relativePayoff > relativePayoffForPick) {
+                    throw new Error("non-pick has higher payoff than pick");
+                }
+                */
+
+                const oc = othersCount(option);
+                oc.completed += pickCounts.completed;
+                oc.payoff += relativePayoff * pickCounts.completed;
+
+                if (relativePayoff < minPayoff) {
+                    minPayoff = relativePayoff;
+                }
+            }
+
+            // This is maybe stupid.  If we don't have any information
+            // for an option and a particular context we count it as the
+            // same as the worst option.
+            for (const option of Array.from(optionNames)) {
+                if (optionsSet.has(option) || option === pick) {
+                    continue;
+                }
+
+                const oc = othersCount(option);
+                oc.completed += pickCounts.completed;
+                oc.payoff += minPayoff * pickCounts.completed;
+            }
+        }
+    }
+
+    for (const experiment of Object.getOwnPropertyNames(countsByPick)) {
+        let totalCompleted = 0;
+        for (const pick of Object.getOwnPropertyNames(countsByPick[experiment])) {
+            totalCompleted += countsByPick[experiment][pick].best.completed;
+        }
+
+        const countToString = (c: Count): string => {
+            return `${formatPercentage(c.completed / totalCompleted, 2)}  ${formatPercentage(
+                relativePayoffForCount(c),
+                2
+            )}`;
+        };
+
+        console.log(experiment);
+        for (const pick of Object.getOwnPropertyNames(countsByPick[experiment])) {
+            const cts = countsByPick[experiment][pick];
+            console.log(`  ${pick}: ${countToString(cts.best)}`);
+
+            if (!alternatives) {
+                continue;
+            }
+
+            for (const option of Object.getOwnPropertyNames(cts.others)) {
+                const otherCount = cts.others[option];
+                if (otherCount.completed !== cts.best.completed) {
+                    throw new Error("we counted completed incorrectly");
+                }
+                console.log(`    ${option}: ${formatPercentage(relativePayoffForCount(otherCount), 2)}`);
+            }
+        }
     }
 }
 
@@ -350,6 +539,12 @@ async function main(): Promise<void> {
             dim("Show decision trees for experiments in an app"),
             ya => ya.positional("key", { type: "string" }),
             args => cmd(cmdShowTrees(args.key))
+        )
+        .command(
+            "stats [--alternatives] <key|name>",
+            dim("Show statistics"),
+            ya => ya.positional("key", { type: "string" }).boolean("alternatives"),
+            args => cmd(cmdShowStats(args.key, args.alternatives))
         )
         .command("graphql", false, {}, args => cmd(graphQL(args)))
         .wrap(yargs.terminalWidth()).argv;
