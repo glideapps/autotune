@@ -1,0 +1,64 @@
+{
+    "$schema": "http://json-schema.org/draft-06/schema#",
+    "type": "object",
+    "additionalProperties": {
+        "$ref": "#/definitions/ExperimentCounts"
+    },
+    "definitions": {
+        "ExperimentCounts": {
+            "type": "object",
+            "properties": {
+                "data": {
+                    "type": "array",
+                    "items": { "$ref": "#/definitions/ContextData" }
+                }
+            },
+            "required": ["data"]
+        },
+        "ContextData": {
+            "type": "object",
+            "properties": {
+                "clientContext": { "$ref": "#/definitions/ClientContext" },
+                "counts": {
+                    "type": "object",
+                    "additionalProperties": {
+                        "oneOf": [{ "$ref": "#/definitions/OptionCounts" }, { "type": "null" }]
+                    }
+                }
+            },
+            "required": ["clientContext", "counts"],
+            "qt-accessors": {
+                "clientContext": {
+                    "go": "Ctx"
+                }
+            }
+        },
+        "ClientContext": {
+            "type": "object",
+            "properties": {
+                "lang": { "type": "string" },
+                "tzo": { "type": "number" }
+            },
+            "required": ["lang", "tzo"],
+            "qt-accessors": {
+                "tzo": {
+                    "go": "TZO"
+                }
+            }
+        },
+        "OptionCounts": {
+            "type": "object",
+            "properties": {
+                "completed": {
+                    "type": "integer",
+                    "title": "completed"
+                },
+                "payoff": {
+                    "type": "number",
+                    "title": "payoff"
+                }
+            },
+            "required": ["completed", "payoff"]
+        }
+    }
+}
