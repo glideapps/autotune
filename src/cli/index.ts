@@ -26,12 +26,14 @@ import {
     authenticate
 } from "./Authentication";
 import { Outcome, Tree } from "../common/ClientConfig";
-import { Count, Convert as ConvertExperimentCounts, ExperimentCounts } from "../common/ExperimentCounts";
+import { Count, ExperimentCounts } from "../common/ExperimentCounts";
 import { lookupBestOption } from "../DecisionTree";
 
 const treeify = require("treeify");
 
 const { red, yellow, blue, magenta, cyan, dim, bold } = chalk;
+
+const star = yellow("★");
 
 async function cmdSignup(_args: yargs.Arguments, email: string, password: string): Promise<void> {
     let response;
@@ -223,7 +225,7 @@ async function cmdListExperiments(_args: yargs.Arguments, appKey: string): Promi
     }
 
     for (const experiment of app.experiments) {
-        const rows: any[] = [];
+        const rows: string[][] = [];
 
         const ago = moment(experiment.started).fromNow();
         rows.push([bold(magenta(experiment.name)), `Since ${ago}`, "Conversion"]);
@@ -239,7 +241,6 @@ async function cmdListExperiments(_args: yargs.Arguments, appKey: string): Promi
         for (const o of options) {
             const conversionRate = (Math.floor(o.result * 1000) / 10).toString();
             const conversion = first ? bold(conversionRate) : conversionRate;
-            const star = yellow("★");
             const name = first ? bold(o.name + " " + star) : o.name;
             rows.push([name, dim(`${o.completed} instances`), `${conversion}%`]);
             first = false;
@@ -441,22 +442,20 @@ async function cmdShowStats(appKey: string, alternatives: boolean): Promise<void
     }
 
     for (const experiment of Object.getOwnPropertyNames(countsByPick)) {
+        const rows: string[][] = [[bold("Option"), bold("Audience"), bold("Payoff")]];
+
         let totalCompleted = 0;
         for (const pick of Object.getOwnPropertyNames(countsByPick[experiment])) {
             totalCompleted += countsByPick[experiment][pick].best.completed;
         }
 
-        const countToString = (c: Count): string => {
-            return `${formatPercentage(c.completed / totalCompleted, 2)}  ${formatPercentage(
-                relativePayoffForCount(c),
-                2
-            )}`;
-        };
-
-        console.log(experiment);
         for (const pick of Object.getOwnPropertyNames(countsByPick[experiment])) {
             const cts = countsByPick[experiment][pick];
-            console.log(`  ${pick}: ${countToString(cts.best)}`);
+            rows.push([
+                bold(pick + " " + star),
+                formatPercentage(cts.best.completed / totalCompleted, 2),
+                formatPercentage(relativePayoffForCount(cts.best), 2)
+            ]);
 
             if (!alternatives) {
                 continue;
@@ -467,9 +466,12 @@ async function cmdShowStats(appKey: string, alternatives: boolean): Promise<void
                 if (otherCount.completed !== cts.best.completed) {
                     throw new Error("we counted completed incorrectly");
                 }
-                console.log(`    ${option}: ${formatPercentage(relativePayoffForCount(otherCount), 2)}`);
+                rows.push([option, "", formatPercentage(relativePayoffForCount(otherCount), 2)]);
             }
         }
+
+        console.log(bold(magenta(experiment)));
+        logTable(rows);
     }
 }
 
@@ -578,7 +580,7 @@ function logTable(rows: any[], style: "void" | "norc" = "norc") {
         table(rows, {
             border: getBorderCharacters(style),
             columnDefault: {
-                truncate: 60
+                truncate: 80
             }
         })
     );
