@@ -3,13 +3,8 @@ import * as request from "request-promise-native";
 import * as yargs from "yargs";
 import * as updateNotifier from "update-notifier";
 
-import {
-    CreateAppKeyRequest,
-    CreateAppKeyResponse,
-    clientUrl,
-    outcomesUrl,
-    GetCountsRequest
-} from "../common/ClientAPI";
+import { clientUrl, outcomesUrl } from "../common/ClientAPI";
+import { CreateAppKeyRequest, CreateAppKeyResponse, GetCountsRequest } from "../common/CLIAPI";
 import { User, Application } from "./Query";
 
 import chalk from "chalk";
