@@ -22,7 +22,7 @@ import {
 } from "./Authentication";
 import { Outcome, Tree } from "../common/ClientConfig";
 import { Count, ExperimentCounts } from "../common/ExperimentCounts";
-import { lookupBestOption } from "../DecisionTree";
+import { lookupBestOption } from "../client/DecisionTree";
 
 const treeify = require("treeify");
 

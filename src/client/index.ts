@@ -1,5 +1,5 @@
 import { Client, CompletionCallback, Outcomes } from "./Client";
-import { ClientConfig } from "./common/ClientConfig";
+import { ClientConfig } from "../common/ClientConfig";
 import { BrowserEnvironment } from "./BrowserEnvironment";
 
 const env = new BrowserEnvironment();

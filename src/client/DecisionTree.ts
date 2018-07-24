@@ -1,4 +1,4 @@
-import { Outcome, Tree } from "./common/ClientConfig";
+import { Outcome, Tree } from "../common/ClientConfig";
 
 export type BestOption = {
     option?: string;

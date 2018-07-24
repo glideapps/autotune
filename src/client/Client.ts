@@ -5,10 +5,10 @@ import {
     StartExperimentsRequest,
     startExperimentsURL,
     completeExperimentsURL
-} from "./common/ClientAPI";
-import { Outcome } from "./common/ClientConfig";
+} from "../common/ClientAPI";
+import { Outcome } from "../common/ClientConfig";
 
-import { Convert, SerializedState } from "./common/models";
+import { Convert, SerializedState } from "../common/models";
 
 import { Environment } from "./Environment";
 

@@ -3,9 +3,9 @@
     "license": "Apache-2.0",
     "version": "2.0.0",
     "description": "Automatically tune JavaScript apps",
-    "main": "dist/index.js",
-    "types": "dist/index.d.ts",
-    "unpkg": "dist/index.browser.min.js",
+    "main": "dist/client/index.js",
+    "types": "dist/client/index.d.ts",
+    "unpkg": "dist/client/index.browser.min.js",
     "scripts": {
         "build": "script/build.sh",
         "bump-version": "ts-node script/patch-npm-version.ts",
