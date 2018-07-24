@@ -9,18 +9,18 @@
                     "type": "string"
                 },
                 "outcomes": {
-                    "$ref": "#/definitions/experiments"
+                    "$ref": "#/definitions/outcomes"
                 }
             },
             "required": ["appKey", "outcomes"]
         },
-        "experiments": {
+        "outcomes": {
             "type": "object",
             "additionalProperties": {
-                "$ref": "#/definitions/experiment"
+                "$ref": "#/definitions/outcome"
             }
         },
-        "experiment": {
+        "outcome": {
             "type": "object",
             "properties": {
                 "options": {
