@@ -316,24 +316,26 @@ function relativePayoffForCount(c: Count): number {
     return c.payoff / c.completed;
 }
 
-function formatPercentage(p: number, decimalPlaces: number): string {
-    return `${(p * 100).toFixed(decimalPlaces)}%`;
-}
+type PickAlternative = {
+    option: string;
+    payoff: number;
+};
 
-async function getCountsForApp(app: Application): Promise<{ [key: string]: ExperimentCounts }> {
-    const body: GetCountsRequest = { appKey: app.key };
-    const result = await requestWithAuth("getCounts", body);
-    return result as { [key: string]: ExperimentCounts };
-}
+type PickStatistics = {
+    pick: string;
+    audience: number;
+    payoff: number;
+    alternatives: PickAlternative[];
+};
 
-async function cmdShowStats(appKey: string, alternatives: boolean): Promise<void> {
-    const app = await getApp(appKey);
-    if (app === undefined) {
-        throw new Error(`App ${appKey} does not exist`);
-    }
-    const outcomes = await getOutcomesForApp(app);
-    const counts = await getCountsForApp(app);
+type AppStatistics = {
+    experiments: { [name: string]: PickStatistics[] };
+};
 
+function makeAppStatistics(
+    outcomes: { [key: string]: Outcome },
+    counts: { [key: string]: ExperimentCounts }
+): AppStatistics {
     const countsByPick: PickedCounts = {};
     for (const experiment of Object.getOwnPropertyNames(counts)) {
         const outcome = outcomes[experiment];
@@ -441,8 +443,10 @@ async function cmdShowStats(appKey: string, alternatives: boolean): Promise<void
         }
     }
 
+    const appStatistics: AppStatistics = { experiments: {} };
+
     for (const experiment of Object.getOwnPropertyNames(countsByPick)) {
-        const rows: string[][] = [[bold("Option"), bold("Audience"), bold("Payoff")]];
+        const stats: PickStatistics[] = [];
 
         let totalCompleted = 0;
         for (const pick of Object.getOwnPropertyNames(countsByPick[experiment])) {
@@ -451,22 +455,68 @@ async function cmdShowStats(appKey: string, alternatives: boolean): Promise<void
 
         for (const pick of Object.getOwnPropertyNames(countsByPick[experiment])) {
             const cts = countsByPick[experiment][pick];
+
+            const alternatives: PickAlternative[] = [];
+            for (const option of Object.getOwnPropertyNames(cts.others)) {
+                const otherCount = cts.others[option];
+                if (otherCount.completed !== cts.best.completed) {
+                    throw new Error("we counted completed incorrectly");
+                }
+                alternatives.push({ option, payoff: relativePayoffForCount(otherCount) });
+            }
+
+            alternatives.sort((a, b) => b.payoff - a.payoff);
+
+            const audience = cts.best.completed / totalCompleted;
+            const payoff = relativePayoffForCount(cts.best);
+            stats.push({ pick, audience, payoff, alternatives });
+        }
+
+        stats.sort((a, b) => b.audience - a.audience);
+
+        appStatistics.experiments[experiment] = stats;
+    }
+
+    return appStatistics;
+}
+
+function formatPercentage(p: number, decimalPlaces: number): string {
+    return `${(p * 100).toFixed(decimalPlaces)}%`;
+}
+
+async function getCountsForApp(app: Application): Promise<{ [key: string]: ExperimentCounts }> {
+    const body: GetCountsRequest = { appKey: app.key };
+    const result = await requestWithAuth("getCounts", body);
+    return result as { [key: string]: ExperimentCounts };
+}
+
+async function cmdShowStats(appKey: string, alternatives: boolean): Promise<void> {
+    const app = await getApp(appKey);
+    if (app === undefined) {
+        throw new Error(`App ${appKey} does not exist`);
+    }
+
+    const outcomes = await getOutcomesForApp(app);
+    const counts = await getCountsForApp(app);
+
+    const stats = makeAppStatistics(outcomes, counts);
+
+    for (const experiment of Object.getOwnPropertyNames(stats.experiments)) {
+        const rows: string[][] = [[bold("Option"), bold("Audience"), bold("Payoff")]];
+
+        for (const pickStat of stats.experiments[experiment]) {
             rows.push([
-                bold(pick + " " + star),
-                formatPercentage(cts.best.completed / totalCompleted, 2),
-                formatPercentage(relativePayoffForCount(cts.best), 2)
+                bold(pickStat.pick + " " + star),
+                formatPercentage(pickStat.audience, 2),
+                formatPercentage(pickStat.payoff, 2)
             ]);
 
             if (!alternatives) {
                 continue;
             }
 
-            for (const option of Object.getOwnPropertyNames(cts.others)) {
-                const otherCount = cts.others[option];
-                if (otherCount.completed !== cts.best.completed) {
-                    throw new Error("we counted completed incorrectly");
-                }
-                rows.push([option, "", formatPercentage(relativePayoffForCount(otherCount), 2)]);
+            for (const altStat of pickStat.alternatives) {
+                rows.push([altStat.option, "", formatPercentage(altStat.payoff, 2)]);
             }
         }
 
