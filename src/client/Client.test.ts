@@ -4,7 +4,7 @@ import { Tree, Op } from "../common/ClientConfig";
 import { Convert } from "../common/models";
 
 import * as validateUUID from "uuid-validate";
-import { ClientContext, completeExperimentsURL, startExperimentsURL } from "../common/ClientAPI";
+import { ClientContext, completeExperimentsURL, startExperimentsURL } from "../schemas/ClientAPI";
 
 jest.useFakeTimers();
 

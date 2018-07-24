@@ -5,7 +5,7 @@ import {
     StartExperimentsRequest,
     startExperimentsURL,
     completeExperimentsURL
-} from "../common/ClientAPI";
+} from "../schemas/ClientAPI";
 import { Outcome } from "../common/ClientConfig";
 
 import { Convert, SerializedState } from "../common/models";

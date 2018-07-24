@@ -3,9 +3,9 @@
 rm -rf dist/*
 
 quicktype --telemetry enable
-quicktype src/common/models.in.ts -o src/common/models.ts
-quicktype --src-lang schema -o src/common/ClientConfig.ts --just-types src/common/ClientConfig.schema
-quicktype --src-lang schema -o src/common/ExperimentCounts.ts src/counts.schema
+quicktype src/schemas/models.in.ts -o src/common/models.ts
+quicktype --src-lang schema --just-types src/schemas/ClientConfig.schema -o src/common/ClientConfig.ts 
+quicktype --src-lang schema src/schemas/counts.schema -o src/common/ExperimentCounts.ts
 
 npm run tslint
 tsc -p tsconfig.json
