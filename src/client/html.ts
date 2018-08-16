@@ -53,7 +53,7 @@ export function optionsForNodeChildren(children: HTMLCollection): string[] {
 //
 // Or more explicitly:
 //
-//   <autotune experiment="main title">
+//   <x-autotune experiment="main title">
 //     <h1 option="english">Hello!</h1>
 //     <h1 option="spanish">¡Hola!</h1>
 //   </x-autotune>
