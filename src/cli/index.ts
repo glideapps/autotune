@@ -69,10 +69,10 @@ async function createDemoApp() {
     console.log("");
     console.log("Then create an experiment:");
     console.log("");
-    console.log(`  <autotune>`);
+    console.log(`  <x-autotune>`);
     console.log(`    <h1>The glass is half full</h1>`);
     console.log(`    <h1>The glass is half empty</h1>`);
-    console.log(`  </autotune>`);
+    console.log(`  </x-autotune>`);
     console.log("");
     console.log("Finally, add the autotune attribute to links that you want users to click:");
     console.log("");

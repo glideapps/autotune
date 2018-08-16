@@ -46,22 +46,22 @@ export function optionsForNodeChildren(children: HTMLCollection): string[] {
 
 // Gather tag-based experiments like:
 //
-//   <autotune>
+//   <x-autotune>
 //     <h1>Hello!</h1>
 //     <h1>¡Hola!</h1>
-//   </autotune>
+//   </x-autotune>
 //
 // Or more explicitly:
 //
 //   <autotune experiment="main title">
 //     <h1 option="english">Hello!</h1>
 //     <h1 option="spanish">¡Hola!</h1>
-//   </autotune>
+//   </x-autotune>
 //
 function getTagExperiments(): TagExperiments {
     let experiments: TagExperiments = {};
 
-    const customTagNodes = document.getElementsByTagName("autotune");
+    const customTagNodes = document.getElementsByTagName("x-autotune");
     each(customTagNodes, node => {
         const name =
             node.getAttribute("data-experiment") ||
