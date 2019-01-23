@@ -35,16 +35,16 @@ Next, create an experiment anywhere on your page:
 
 ```html
 <!-- Shorthand syntax -->
-<autotune>
+<x-autotune>
     <h1>The glass is half full</h1>
     <h1>The glass is half empty</h1>
-</autotune>
+</x-autotune>
 
 <!-- Same but more explicit -->
-<autotune experiment="Main title">
+<x-autotune data-experiment="Main title">
     <h1 option="half full">The glass is half full</h1>
     <h1 option="half empty">The glass is half empty</h1>
-</autotune>
+</x-autotune>
 
 <!-- Without custom tags (most compatible) -->
 <h1 data-experiment="Main title" data-option="half full">The glass is half full</h1>
@@ -65,7 +65,7 @@ Autotune will decide which `<h1>` to display, and favor the choice that causes m
 
 ### Autotuned styles
 
-Use the `autotune-class` attribute to let Autotune apply the CSS class that performs the best:
+Use the `data-autotune-class` attribute to let Autotune apply the CSS class that performs the best:
 
 ```html
 <style>
@@ -74,7 +74,7 @@ Use the `autotune-class` attribute to let Autotune apply the CSS class that perf
 .extra-busy { ... }
 </style>
 
-<body autotune-class="clean busy extra-busy">
+<body data-autotune-class="clean busy extra-busy">
   ...
 </body>
 ```
