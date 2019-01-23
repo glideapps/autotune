@@ -61,7 +61,7 @@ export function optionsForNodeChildren(children: HTMLCollection): string[] {
 function getTagExperiments(): TagExperiments {
     let experiments: TagExperiments = {};
 
-    const customTagNodes = document.getElementsByTagName("x-autotune");
+    const customTagNodes = document.querySelectorAll("x-autotune, autotune");
     each(customTagNodes, node => {
         const name =
             node.getAttribute("data-experiment") ||

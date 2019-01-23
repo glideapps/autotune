@@ -36,4 +36,10 @@ describe("optionsForNodeChildren", () => {
         <div>a</div>
         <div>b</div>
     </x-autotune>`).toEqual(["a", "b"]));
+    
+    it("Legacy case", () =>
+        expectOptions(`<autotune>
+        <div option="x">Hello</div>
+        <div option="y">World</div>
+    </autotune>`).toEqual(["x", "y"]));
 });
